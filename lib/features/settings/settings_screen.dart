@@ -35,10 +35,10 @@ class SettingsScreen extends ConsumerWidget {
               icon: Icons.workspace_premium_outlined,
               label: user?.subscriptionPlan?.replaceAll('_', ' ').toUpperCase() ?? 'No active plan',
               sub: user?.isTrial == true && user?.trialDaysLeft != null
-                  ? '${user!.trialDaysLeft} day${user.trialDaysLeft == 1 ? '' : 's'} left in trial'
-                  : (user?.subscriptionStatus ?? '—'),
+                  ? '${user!.trialDaysLeft} day${user.trialDaysLeft == 1 ? '' : 's'} left in trial — tap to upgrade'
+                  : 'View or change your plan',
               color: AppColors.warning,
-              onTap: () => _openExternal('https://pronoteai.com/dashboard?manage=subscription'),
+              onTap: () => context.go('/plans'),
             ),
 
             const SizedBox(height: 18),

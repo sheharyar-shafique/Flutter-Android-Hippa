@@ -136,6 +136,18 @@ class AuthController extends StateNotifier<AuthState> {
     state = state.copyWith(clearUser: true);
   }
 
+  /// Pulls /auth/me again so a subscription / role change made on the web
+  /// (e.g. the user just paid via Stripe checkout) is reflected here.
+  Future<void> refreshUser() async {
+    if (state.user == null) return;
+    try {
+      final user = await _ref.read(authApiProvider).me();
+      state = state.copyWith(user: user);
+    } catch (_) {
+      // Soft fail — don't disturb the UI if the refresh fails.
+    }
+  }
+
   void clearError() {
     state = state.copyWith(clearError: true);
   }

@@ -24,6 +24,7 @@ import '../../features/patients/patient_detail_screen.dart';
 import '../../features/patients/patients_list_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/splash/splash_screen.dart';
+import '../../features/subscription/plans_screen.dart';
 import '../../features/subscription/subscription_locked_screen.dart';
 import '../../features/team/team_screen.dart';
 import '../../features/templates/template_editor_screen.dart';
@@ -40,6 +41,7 @@ const _kPublicPaths = {
   '/hipaa-baa',
   '/enterprise',
   '/delete-account',
+  '/plans',
 };
 
 bool _isPublic(String loc) {
@@ -96,6 +98,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/delete-account', builder: (_, __) => const DeleteAccountInfoScreen()),
       GoRoute(path: '/enterprise', builder: (_, __) => const EnterpriseScreen()),
       GoRoute(path: '/help', builder: (_, __) => const HelpCenterScreen()),
+      GoRoute(path: '/plans', builder: (_, __) => const PlansScreen()),
 
       // Authenticated app surfaces
       GoRoute(path: '/dashboard', builder: (_, __) => const DashboardScreen()),

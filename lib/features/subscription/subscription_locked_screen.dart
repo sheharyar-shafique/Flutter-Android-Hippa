@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/theme/app_theme.dart';
 import '../auth/auth_controller.dart';
@@ -67,19 +66,14 @@ class SubscriptionLockedScreen extends ConsumerWidget {
                         color: Colors.transparent,
                         child: InkWell(
                           borderRadius: BorderRadius.circular(16),
-                          onTap: () async {
-                            final uri = Uri.parse('https://pronoteai.com/dashboard?manage=subscription');
-                            if (await canLaunchUrl(uri)) {
-                              await launchUrl(uri, mode: LaunchMode.externalApplication);
-                            }
-                          },
+                          onTap: () => context.go('/plans'),
                           child: const Center(
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.open_in_new, color: Colors.white, size: 18),
+                                Icon(Icons.workspace_premium_outlined, color: Colors.white, size: 18),
                                 SizedBox(width: 8),
-                                Text('Manage subscription',
+                                Text('Choose a plan',
                                     style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
                               ],
                             ),

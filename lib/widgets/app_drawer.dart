@@ -107,6 +107,13 @@ class AppDrawer extends ConsumerWidget {
                     color: AppColors.warning,
                     currentPath: currentPath,
                   ),
+                  _DrawerItem(
+                    icon: Icons.workspace_premium_outlined,
+                    label: 'Plans & billing',
+                    route: '/plans',
+                    color: const Color(0xFFFBBF24),
+                    currentPath: currentPath,
+                  ),
                   if ((user?.subscriptionPlan ?? '').startsWith('group'))
                     _DrawerItem(
                       icon: Icons.groups_outlined,

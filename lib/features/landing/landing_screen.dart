@@ -682,7 +682,7 @@ class _PlanCard extends StatelessWidget {
                     ),
                   )
                 : OutlinedButton(
-                    onPressed: () => context.go(plan.name == 'Enterprise' ? '/enterprise' : '/signup'),
+                    onPressed: () => context.go(plan.name == 'Enterprise' ? '/enterprise' : '/plans'),
                     style: OutlinedButton.styleFrom(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
