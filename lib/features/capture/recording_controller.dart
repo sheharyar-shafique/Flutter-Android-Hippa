@@ -12,8 +12,9 @@ import '../../core/api/audio_api.dart';
 import '../../core/api/notes_api.dart';
 import '../../core/models/note.dart';
 
-/// Hard cap on recording length — matches the web app's 2-hour business rule.
-/// Five-minute warning shown when the user crosses the 1h55m mark.
+/// Mirrors the web's MIN/MAX/WARNING constants in CapturePage.tsx (lines 26-34)
+/// — DO NOT diverge. UI logic depends on these matching across platforms.
+const Duration kRecordingMinDuration = Duration(seconds: 20);
 const Duration kRecordingMaxDuration = Duration(hours: 2);
 const Duration kRecordingWarnAt = Duration(hours: 1, minutes: 55);
 
@@ -23,10 +24,22 @@ class RecordingState {
   final RecordingPhase phase;
   final Duration elapsed;
   final String? recordedFilePath;
-  final double uploadProgress; // 0.0 .. 1.0
+  final double uploadProgress;
   final ClinicalNote? createdNote;
   final String? error;
   final bool warnApproachingLimit;
+
+  /// Patient name attached to this session (web's `patientName`). Required
+  /// before the user can start recording — the web throws a toast if empty
+  /// (CapturePage.tsx:208).
+  final String patientName;
+
+  /// Optional pronoun ("She/Her" / "He/Him" / "They/Them"). Empty when none
+  /// selected — matches web behaviour.
+  final String patientPronoun;
+
+  /// Template id selected for this session ("soap", "psychiatry", etc.).
+  final String selectedTemplateId;
 
   const RecordingState({
     this.phase = RecordingPhase.idle,
@@ -36,9 +49,22 @@ class RecordingState {
     this.createdNote,
     this.error,
     this.warnApproachingLimit = false,
+    this.patientName = '',
+    this.patientPronoun = '',
+    this.selectedTemplateId = 'soap',
   });
 
   bool get isActive => phase == RecordingPhase.recording || phase == RecordingPhase.paused;
+  bool get meetsMinDuration => elapsed >= kRecordingMinDuration;
+  Duration get remainingMin =>
+      kRecordingMinDuration - elapsed > Duration.zero
+          ? kRecordingMinDuration - elapsed
+          : Duration.zero;
+
+  double get minProgress {
+    final n = elapsed.inMilliseconds / kRecordingMinDuration.inMilliseconds;
+    return n > 1 ? 1 : n;
+  }
 
   RecordingState copyWith({
     RecordingPhase? phase,
@@ -48,6 +74,9 @@ class RecordingState {
     ClinicalNote? createdNote,
     String? error,
     bool? warnApproachingLimit,
+    String? patientName,
+    String? patientPronoun,
+    String? selectedTemplateId,
     bool clearError = false,
     bool clearNote = false,
   }) {
@@ -59,12 +88,15 @@ class RecordingState {
       createdNote: clearNote ? null : (createdNote ?? this.createdNote),
       error: clearError ? null : (error ?? this.error),
       warnApproachingLimit: warnApproachingLimit ?? this.warnApproachingLimit,
+      patientName: patientName ?? this.patientName,
+      patientPronoun: patientPronoun ?? this.patientPronoun,
+      selectedTemplateId: selectedTemplateId ?? this.selectedTemplateId,
     );
   }
 }
 
 final recordingControllerProvider =
-    StateNotifierProvider.autoDispose<RecordingController, RecordingState>((ref) {
+    StateNotifierProvider<RecordingController, RecordingState>((ref) {
   final api = ref.watch(audioApiProvider);
   final notes = ref.watch(notesApiProvider);
   return RecordingController(api: api, notes: notes);
@@ -73,16 +105,32 @@ final recordingControllerProvider =
 class RecordingController extends StateNotifier<RecordingState> {
   RecordingController({required AudioApi api, required NotesApi notes})
       : _api = api,
+        // ignore: unused_field
         _notes = notes,
         super(const RecordingState());
 
   final AudioApi _api;
-  // ignore: unused_field
   final NotesApi _notes;
   final AudioRecorder _recorder = AudioRecorder();
   Timer? _ticker;
   DateTime? _startedAt;
   Duration _accumulated = Duration.zero;
+  bool _warned = false;
+
+  void setPatient({String? name, String? pronoun}) {
+    state = state.copyWith(
+      patientName: name ?? state.patientName,
+      patientPronoun: pronoun ?? state.patientPronoun,
+    );
+  }
+
+  void clearPatient() {
+    state = state.copyWith(patientName: '', patientPronoun: '');
+  }
+
+  void setTemplate(String id) {
+    state = state.copyWith(selectedTemplateId: id);
+  }
 
   Future<bool> _ensureMicPermission() async {
     final status = await Permission.microphone.request();
@@ -91,10 +139,6 @@ class RecordingController extends StateNotifier<RecordingState> {
 
   Future<String> _newRecordingPath() async {
     final stamp = DateTime.now().millisecondsSinceEpoch;
-    // path_provider has no implementation on Flutter web. The `record`
-    // package's web implementation accepts an empty/relative path and
-    // streams the recording to a Blob URL itself, so we just return a
-    // sentinel filename and let the recorder handle it.
     if (kIsWeb) return 'visit_$stamp.m4a';
     final dir = await getApplicationDocumentsDirectory();
     final folder = Directory('${dir.path}/recordings');
@@ -103,7 +147,25 @@ class RecordingController extends StateNotifier<RecordingState> {
   }
 
   Future<void> start() async {
-    state = const RecordingState();
+    if (state.patientName.trim().isEmpty) {
+      state = state.copyWith(
+        phase: RecordingPhase.error,
+        error: 'Patient name is required to start recording.',
+      );
+      return;
+    }
+
+    state = state.copyWith(
+      phase: RecordingPhase.idle,
+      elapsed: Duration.zero,
+      uploadProgress: 0,
+      clearError: true,
+      clearNote: true,
+      warnApproachingLimit: false,
+    );
+    _warned = false;
+    _accumulated = Duration.zero;
+
     if (!await _ensureMicPermission()) {
       state = state.copyWith(
         phase: RecordingPhase.error,
@@ -131,14 +193,10 @@ class RecordingController extends StateNotifier<RecordingState> {
     );
 
     _startedAt = DateTime.now();
-    _accumulated = Duration.zero;
     state = state.copyWith(
       phase: RecordingPhase.recording,
       elapsed: Duration.zero,
       recordedFilePath: path,
-      clearError: true,
-      clearNote: true,
-      warnApproachingLimit: false,
     );
     _startTicker();
   }
@@ -151,8 +209,8 @@ class RecordingController extends StateNotifier<RecordingState> {
           : DateTime.now().difference(_startedAt!);
       final total = _accumulated + running;
 
+      // Hard cap: auto-stop at 2 hours.
       if (total >= kRecordingMaxDuration) {
-        // Hard stop at 2 hours.
         stop();
         return;
       }
@@ -161,6 +219,9 @@ class RecordingController extends StateNotifier<RecordingState> {
         elapsed: total,
         warnApproachingLimit: total >= kRecordingWarnAt,
       );
+
+      // 5-minute warning, fire once.
+      if (!_warned && total >= kRecordingWarnAt) _warned = true;
     });
   }
 
@@ -183,30 +244,71 @@ class RecordingController extends StateNotifier<RecordingState> {
     _startTicker();
   }
 
-  Future<void> stop() async {
-    _ticker?.cancel();
-    state = state.copyWith(phase: RecordingPhase.finalising);
+  /// Stop & upload. Mirrors handleStopRecording() from the web. Refuses to
+  /// stop if the minimum 20-second floor isn't met (returns false; UI uses
+  /// this to trigger the shake animation).
+  Future<bool> stop() async {
+    if (!state.meetsMinDuration && state.isActive) return false;
 
+    _ticker?.cancel();
+    if (_startedAt != null) {
+      _accumulated += DateTime.now().difference(_startedAt!);
+    }
+    _startedAt = null;
+
+    state = state.copyWith(phase: RecordingPhase.finalising, elapsed: _accumulated);
     final path = await _recorder.stop();
     if (path == null) {
       state = state.copyWith(
         phase: RecordingPhase.error,
         error: 'Recording could not be saved.',
       );
-      return;
+      return true;
     }
-    if (_startedAt != null) {
-      _accumulated += DateTime.now().difference(_startedAt!);
-    }
-    _startedAt = null;
-    state = state.copyWith(
-      phase: RecordingPhase.idle,
-      elapsed: _accumulated,
-      recordedFilePath: path,
-    );
+
+    state = state.copyWith(recordedFilePath: path);
+    await _uploadAndCreateNote();
+    return true;
   }
 
-  Future<void> cancel() async {
+  Future<void> _uploadAndCreateNote() async {
+    final path = state.recordedFilePath;
+    if (path == null) {
+      state = state.copyWith(
+        phase: RecordingPhase.error,
+        error: 'No recording to upload.',
+      );
+      return;
+    }
+
+    state = state.copyWith(phase: RecordingPhase.uploading, uploadProgress: 0);
+    try {
+      final note = await _api.upload(
+        filePath: path,
+        filename: path.split(Platform.pathSeparator).last,
+        title: 'Visit with ${state.patientName}',
+        patientName: state.patientName.isEmpty ? null : state.patientName,
+        templateId: state.selectedTemplateId,
+        onProgress: (sent, total) {
+          if (total <= 0) return;
+          state = state.copyWith(uploadProgress: sent / total);
+        },
+      );
+      state = state.copyWith(
+        phase: RecordingPhase.done,
+        createdNote: note,
+        uploadProgress: 1,
+      );
+    } on ApiException catch (e) {
+      state = state.copyWith(phase: RecordingPhase.error, error: e.message);
+    } catch (e) {
+      state = state.copyWith(phase: RecordingPhase.error, error: 'Upload failed: $e');
+    }
+  }
+
+  /// Cancel and discard the recording without uploading. Used by the
+  /// "Reset" button on the paused state.
+  Future<void> reset() async {
     _ticker?.cancel();
     if (await _recorder.isRecording() || await _recorder.isPaused()) {
       await _recorder.stop();
@@ -220,59 +322,31 @@ class RecordingController extends StateNotifier<RecordingState> {
     }
     _startedAt = null;
     _accumulated = Duration.zero;
-    state = const RecordingState();
+    _warned = false;
+    state = const RecordingState().copyWith(
+      patientName: state.patientName,
+      patientPronoun: state.patientPronoun,
+      selectedTemplateId: state.selectedTemplateId,
+    );
   }
 
-  Future<void> uploadAndCreateNote({
-    required String title,
-    String? patientName,
-    String? templateId,
-  }) async {
-    final path = state.recordedFilePath;
-    if (path == null || !File(path).existsSync()) {
-      state = state.copyWith(
-        phase: RecordingPhase.error,
-        error: 'No recording to upload.',
-      );
-      return;
-    }
-
-    state = state.copyWith(phase: RecordingPhase.uploading, uploadProgress: 0);
+  /// Provides access to existing notes' patient names for the autocomplete
+  /// dropdown. Returns most-recent-first, deduplicated, lower-case-collated.
+  Future<List<String>> recentPatientNames({int limit = 50}) async {
     try {
-      final note = await _api.upload(
-        filePath: path,
-        filename: path.split(Platform.pathSeparator).last,
-        title: title,
-        patientName: patientName,
-        templateId: templateId,
-        onProgress: (sent, total) {
-          if (total <= 0) return;
-          state = state.copyWith(uploadProgress: sent / total);
-        },
-      );
-      state = state.copyWith(
-        phase: RecordingPhase.done,
-        createdNote: note,
-        uploadProgress: 1,
-      );
-    } on ApiException catch (e) {
-      state = state.copyWith(
-        phase: RecordingPhase.error,
-        error: e.message,
-      );
-    } catch (e) {
-      state = state.copyWith(
-        phase: RecordingPhase.error,
-        error: 'Upload failed: $e',
-      );
+      final page = await _notes.list(limit: limit);
+      final seen = <String>{};
+      final out = <String>[];
+      for (final n in page.notes) {
+        final name = n.patientName?.trim() ?? '';
+        if (name.isEmpty) continue;
+        if (!seen.add(name.toLowerCase())) continue;
+        out.add(name);
+      }
+      return out;
+    } catch (_) {
+      return const [];
     }
-  }
-
-  void reset() {
-    _ticker?.cancel();
-    _startedAt = null;
-    _accumulated = Duration.zero;
-    state = const RecordingState();
   }
 
   @override
@@ -282,3 +356,8 @@ class RecordingController extends StateNotifier<RecordingState> {
     super.dispose();
   }
 }
+
+/// FutureProvider for the patient-autocomplete dropdown.
+final recentPatientNamesProvider = FutureProvider.autoDispose<List<String>>((ref) async {
+  return ref.read(recordingControllerProvider.notifier).recentPatientNames();
+});
