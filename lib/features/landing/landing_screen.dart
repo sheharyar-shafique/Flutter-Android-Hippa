@@ -138,17 +138,20 @@ class _LandingScreenState extends State<LandingScreen> {
         // build children and the GlobalKey lookup would return null.
         child: Column(
           children: [
+            // Section order matches the web LandingPage.tsx exactly:
+            //   Hero → StatsBar → Features → HowItWorks → ForRoles ("About"
+            //   on the web's nav) → Pricing → FAQ → Security → FinalCTA → Footer.
             const _HeroSection(),
             const _StatsBar(),
             KeyedSubtree(key: _featuresKey, child: const _FeaturesSection()),
             KeyedSubtree(key: _howItWorksKey, child: const _HowItWorksSection()),
+            KeyedSubtree(key: _aboutKey, child: const _ForDifferentRolesSection()),
             KeyedSubtree(key: _pricingKey, child: const _PricingSection()),
-            KeyedSubtree(key: _securityKey, child: const _SecuritySection()),
-            KeyedSubtree(key: _aboutKey, child: const _AboutSection()),
             _FaqSection(
               openIndex: _openFaq,
               onToggle: (i) => setState(() => _openFaq = _openFaq == i ? -1 : i),
             ),
+            KeyedSubtree(key: _securityKey, child: const _SecuritySection()),
             const _FinalCta(),
             const _Footer(),
           ],
@@ -194,6 +197,62 @@ class _NavChip extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────
 // Hero
 // ─────────────────────────────────────────────────────────────────
+
+void _showDemoDialog(BuildContext context) {
+  showDialog<void>(
+    context: context,
+    builder: (ctx) => Dialog(
+      backgroundColor: AppColors.slate900,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 84,
+              height: 84,
+              decoration: BoxDecoration(
+                gradient: kEmeraldGradient,
+                borderRadius: BorderRadius.circular(28),
+              ),
+              child: const Icon(Icons.play_arrow, color: Colors.white, size: 44),
+            ),
+            const SizedBox(height: 18),
+            const Text(
+              '60-second product tour',
+              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'See Pronote turn a real patient conversation into a finished SOAP note in under a minute.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.slate400, fontSize: 13.5, height: 1.5),
+            ),
+            const SizedBox(height: 18),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  context.go('/signup');
+                },
+                icon: const Icon(Icons.bolt),
+                label: const Text('Skip the demo — start free trial'),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
 
 class _HeroSection extends StatelessWidget {
   const _HeroSection();
@@ -290,9 +349,9 @@ class _HeroSection extends StatelessWidget {
             width: double.infinity,
             height: 56,
             child: OutlinedButton.icon(
-              onPressed: () => context.go('/login'),
-              icon: const Icon(Icons.login, size: 18),
-              label: const Text('Sign in to your account'),
+              onPressed: () => _showDemoDialog(context),
+              icon: const Icon(Icons.play_arrow, size: 20),
+              label: const Text('Watch Demo'),
               style: OutlinedButton.styleFrom(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               ),
@@ -531,9 +590,16 @@ class _HowItWorksSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final steps = [
-      ('01', 'Start visit', 'Tap the mic and start recording the patient conversation.', Icons.mic, AppColors.emerald400),
-      ('02', 'AI transcribes live', 'Real-time speech recognition captures every word as you speak.', Icons.graphic_eq, AppColors.info),
-      ('03', 'Clinical note generated', 'Personalised SOAP note ready to review, edit, sign, and export.', Icons.description, const Color(0xFFA78BFA)),
+      // Copy ported verbatim from the web LandingPage.tsx (lines 433-445).
+      ('01', 'Capture',
+          'Click "Capture conversation" when your visit begins. Pronote listens for up to 1.5 hours, virtual or in-office visits.',
+          Icons.mic, AppColors.emerald400),
+      ('02', 'Review and Edit',
+          'Click "End conversation" and view your personalised note in just a few seconds. With every visit, Pronote learns your style.',
+          Icons.edit_note, AppColors.info),
+      ('03', 'Send',
+          'Easily send auto-generated patient instructions, and copy completed notes into any EHR system with one click.',
+          Icons.send, const Color(0xFFA78BFA)),
     ];
 
     return Container(
@@ -1263,11 +1329,35 @@ class _CheckBadge extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// About
+// For Different Roles (web's id="about" lives here)
 // ─────────────────────────────────────────────────────────────────
 
-class _AboutSection extends StatelessWidget {
-  const _AboutSection();
+class _ForDifferentRolesSection extends StatelessWidget {
+  const _ForDifferentRolesSection();
+
+  static const _roles = [
+    _Role(
+      icon: Icons.people,
+      gradient: [Color(0xFF34D399), Color(0xFF14B8A6)],
+      title: 'For MDs',
+      desc: 'Streamlined notes, clinical accuracy, and integration with your existing workflows.',
+      badge: '50,000+ MDs',
+    ),
+    _Role(
+      icon: Icons.description_outlined,
+      gradient: [Color(0xFF60A5FA), Color(0xFF6366F1)],
+      title: 'For RNs',
+      desc: 'Document patient assessments and care plans in a fraction of the time.',
+      badge: '20,000+ RNs',
+    ),
+    _Role(
+      icon: Icons.mic,
+      gradient: [Color(0xFFA78BFA), Color(0xFF8B5CF6)],
+      title: 'For Therapists',
+      desc: 'Capture session details while staying present with your clients.',
+      badge: '15,000+ Therapists',
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -1276,111 +1366,101 @@ class _AboutSection extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(24, 60, 24, 60),
       color: AppColors.slate900,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Center(child: _SectionBadge(label: 'About', icon: Icons.info_outline)),
-          const SizedBox(height: 12),
-          const Center(
-            child: Text(
-              'Built by clinicians.\nFor clinicians.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -0.5, height: 1.2),
-            ),
-          ),
-          const SizedBox(height: 16),
           const Text(
-            'Pronote was started after watching family-medicine doctors lose two hours every evening to documentation. Charts came home. Dinners got cold. Burnout was the only thing keeping pace with the EHR.',
-            style: TextStyle(color: AppColors.slate400, fontSize: 14, height: 1.6),
+            'For every healthcare professional',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800, letterSpacing: -0.5, height: 1.2),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           const Text(
-            'We built Pronote to give that time back. Real clinicians designed every template. Every workflow was tested in a real clinic before it shipped. Every privacy decision was made with HIPAA, not just "compliance theatre", in mind.',
-            style: TextStyle(color: AppColors.slate400, fontSize: 14, height: 1.6),
+            "Whether you're a physician, nurse, or therapist — Pronote adapts to your specialty.",
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppColors.slate400, fontSize: 14, height: 1.5),
           ),
           const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: AppColors.cardBg,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.cardBorder),
-            ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.flag_outlined, color: AppColors.emerald400, size: 20),
-                    SizedBox(width: 8),
-                    Text('Our promise',
-                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
-                  ],
-                ),
-                SizedBox(height: 10),
-                _PromiseRow(text: 'Your patient data never trains an AI model.'),
-                _PromiseRow(text: 'You can export and delete everything, anytime.'),
-                _PromiseRow(text: 'A real human answers every support email — usually the same day.'),
-                _PromiseRow(text: 'New features ship monthly — request anything you need at support@pronoteai.com.'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 18),
-          Center(
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 24,
-              runSpacing: 12,
-              children: [
-                _Stat(big: '50K+', sub: 'clinicians'),
-                _Stat(big: '2M+', sub: 'notes'),
-                _Stat(big: '7-day', sub: 'free trial'),
-                _Stat(big: '100%', sub: 'HIPAA-aligned'),
-              ],
-            ),
-          ),
+          ..._roles.map((r) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _RoleCard(role: r),
+              )),
         ],
       ),
     );
   }
 }
 
-class _PromiseRow extends StatelessWidget {
-  final String text;
-  const _PromiseRow({required this.text});
+class _Role {
+  final IconData icon;
+  final List<Color> gradient;
+  final String title;
+  final String desc;
+  final String badge;
+  const _Role({
+    required this.icon,
+    required this.gradient,
+    required this.title,
+    required this.desc,
+    required this.badge,
+  });
+}
+
+class _RoleCard extends StatelessWidget {
+  final _Role role;
+  const _RoleCard({required this.role});
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: AppColors.cardBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Column(
         children: [
-          const Icon(Icons.check_circle, color: AppColors.emerald400, size: 16),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(text, style: const TextStyle(color: AppColors.slate400, fontSize: 13.5, height: 1.5)),
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: role.gradient),
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: [
+                BoxShadow(
+                  color: role.gradient.first.withValues(alpha: 0.3),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Icon(role.icon, color: Colors.white, size: 28),
+          ),
+          const SizedBox(height: 14),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.emerald500.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(50),
+            ),
+            child: Text(
+              role.badge,
+              style: const TextStyle(color: AppColors.emerald400, fontSize: 11, fontWeight: FontWeight.w700),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            role.title,
+            style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            role.desc,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppColors.slate400, fontSize: 13.5, height: 1.5),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _Stat extends StatelessWidget {
-  final String big;
-  final String sub;
-  const _Stat({required this.big, required this.sub});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(big,
-            style: const TextStyle(color: AppColors.emerald400, fontSize: 22, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 2),
-        Text(sub, style: const TextStyle(color: AppColors.slate400, fontSize: 11)),
-      ],
     );
   }
 }
@@ -1396,19 +1476,25 @@ class _FaqSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // FAQs ported verbatim from frontend/src/data/index.ts (lines 310-331)
+    // so the landing FAQ in app and on the web stay synchronised.
     final faqs = [
-      ('Is my patient data HIPAA-protected?',
-          'Yes. All audio and clinical notes are encrypted in transit (TLS 1.3) and at rest (AES-256). We sign a Business Associate Agreement on every paid plan. Cloud backup is disabled at the OS level so PHI never leaks to Google Drive.'),
-      ('How accurate is the AI transcription?',
-          'Pronote averages 92.5% transcription accuracy on clinical vocabulary. You can always edit the generated note before signing — the AI is a draft, never the final record.'),
-      ('How long can I record?',
-          'Up to 2 hours of continuous recording per visit. The app warns at 1h55m and stops automatically at 2h.'),
-      ('Can I import templates from another scribe?',
-          'Yes — upload your existing template structure and we will format it. Custom templates support every section the major EHRs use (SOAP, HPI, A&P, ROS, etc.).'),
-      ('What happens after the 7-day trial?',
-          'You pick a paid plan or your account locks until you do. We never auto-charge a credit card you did not enter.'),
-      ('Do you train AI models on my patient data?',
-          'No. Patient audio and notes are never used to train any model. They live only in your account, encrypted, and are deleted when you delete your account.'),
+      (
+        'How does Pronote ensure data security and patient privacy?',
+        'Pronote maintains HIPAA compliance through end-to-end encryption, secure data centers, automatic audio deletion after processing, and strict access controls. All data is encrypted both in transit and at rest using AES-256 encryption.',
+      ),
+      (
+        'Can Pronote integrate with existing Electronic Health Record (EHR) systems?',
+        'Yes, Pronote integrates with most major EHR systems including Epic, Cerner, Allscripts, and others through our secure API. Contact our enterprise team for custom integration support.',
+      ),
+      (
+        'What kind of AI technology powers the note-taking features?',
+        'Pronote uses advanced medical-grade speech recognition combined with large language models specifically trained on clinical documentation. Our AI understands medical terminology, context, and formatting requirements across specialties.',
+      ),
+      (
+        'Is there a learning curve for new users to adopt Pronote?',
+        'Pronote is designed to be intuitive and easy to use. Most clinicians are productive within minutes. We also provide onboarding support, video tutorials, and dedicated customer success managers for enterprise clients.',
+      ),
     ];
 
     return Container(
@@ -1418,12 +1504,24 @@ class _FaqSection extends StatelessWidget {
       child: Column(
         children: [
           const _SectionBadge(label: 'FAQ', icon: Icons.help_outline),
-          const SizedBox(height: 12),
-          const Text(
-            'Questions, answered.',
-            style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -0.5),
+          const SizedBox(height: 14),
+          RichText(
+            textAlign: TextAlign.center,
+            text: const TextSpan(
+              style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -0.5, height: 1.2),
+              children: [
+                TextSpan(text: 'Frequently asked\n'),
+                TextSpan(text: 'questions', style: TextStyle(color: AppColors.emerald400)),
+              ],
+            ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 8),
+          const Text(
+            'Everything you need to know about Pronote.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppColors.slate400, fontSize: 13.5),
+          ),
+          const SizedBox(height: 22),
           ...faqs.asMap().entries.map((e) {
             final i = e.key;
             final q = e.value.$1;
@@ -1487,25 +1585,44 @@ class _FinalCta extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(24, 60, 24, 60),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.slate900, AppColors.bgDeep],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+          colors: [AppColors.slate900, AppColors.slate800, AppColors.slate900],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
       ),
       child: Column(
         children: [
-          const Text(
-            'Ready to save 2+ hours a day?',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800, height: 1.2),
+          // "Join 50,000+ clinicians" pill — matches web (line 855-857).
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.emerald500.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(50),
+              border: Border.all(color: AppColors.emerald500.withValues(alpha: 0.3)),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.auto_awesome, color: AppColors.emerald400, size: 13),
+                SizedBox(width: 6),
+                Text('Join 50,000+ clinicians',
+                    style: TextStyle(color: AppColors.emerald400, fontSize: 12, fontWeight: FontWeight.w700)),
+              ],
+            ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 18),
           const Text(
-            'Start your 7-day free trial. No credit card required.',
+            'Reclaim your time.\nImprove patient care.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.slate400, fontSize: 14),
+            style: TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w900, height: 1.2, letterSpacing: -0.5),
           ),
-          const SizedBox(height: 22),
+          const SizedBox(height: 12),
+          const Text(
+            'Join thousands of healthcare professionals who have transformed their documentation workflow with AI.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppColors.slate400, fontSize: 14, height: 1.55),
+          ),
+          const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
             height: 56,
@@ -1527,12 +1644,38 @@ class _FinalCta extends StatelessWidget {
                   onTap: () => context.go('/signup'),
                   borderRadius: BorderRadius.circular(16),
                   child: const Center(
-                    child: Text("Get started — it's free",
-                        style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800)),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text('Start Your Free Trial',
+                            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
+                        SizedBox(width: 8),
+                        Icon(Icons.arrow_forward, color: Colors.white, size: 20),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: OutlinedButton.icon(
+              onPressed: () => _showDemoDialog(context),
+              icon: const Icon(Icons.play_arrow, size: 20),
+              label: const Text('Watch Demo'),
+              style: OutlinedButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            'No credit card required • 7-day free trial • Cancel anytime',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppColors.slate500, fontSize: 12),
           ),
         ],
       ),
@@ -1549,51 +1692,83 @@ class _Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final year = DateTime.now().year;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(24, 36, 24, 28),
-      color: AppColors.bgDeep,
+      padding: const EdgeInsets.fromLTRB(24, 40, 24, 28),
+      decoration: const BoxDecoration(
+        color: AppColors.slate900,
+        border: Border(top: BorderSide(color: AppColors.cardBorder, width: 1)),
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Brand block (web's first column)
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                width: 32,
-                height: 32,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
                   gradient: kEmeraldGradient,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(11),
                 ),
-                child: const Icon(Icons.auto_awesome, size: 16, color: Colors.white),
+                child: const Icon(Icons.auto_awesome, size: 17, color: Colors.white),
               ),
-              const SizedBox(width: 8),
-              const Text('Pronote', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
+              const SizedBox(width: 10),
+              const Text('Pronote',
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18)),
             ],
           ),
-          const SizedBox(height: 16),
-          Wrap(
-            alignment: WrapAlignment.center,
-            spacing: 16,
-            runSpacing: 8,
-            children: [
-              _FooterLink(label: 'Sign in', onTap: () => context.go('/login')),
-              _FooterLink(label: 'Privacy', onTap: () => context.go('/privacy')),
-              _FooterLink(label: 'Terms', onTap: () => context.go('/terms')),
-              _FooterLink(label: 'HIPAA BAA', onTap: () => context.go('/hipaa-baa')),
-              _FooterLink(label: 'Enterprise', onTap: () => context.go('/enterprise')),
-              _FooterLink(label: 'Help', onTap: () => context.go('/help')),
-            ],
-          ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 10),
           const Text(
-            '© 2026 Pronote — AI Medical Scribe',
-            style: TextStyle(color: AppColors.slate500, fontSize: 11),
+            'AI-powered clinical documentation for modern healthcare.',
+            style: TextStyle(color: AppColors.slate500, fontSize: 13, height: 1.5),
           ),
-          const SizedBox(height: 4),
-          const Text(
-            'Built for clinicians. HIPAA-aligned. Made with care.',
-            style: TextStyle(color: AppColors.slate500, fontSize: 11),
+          const SizedBox(height: 28),
+
+          // Three columns: Product / Company / Legal — same as web (lines 897-901).
+          _FooterColumn(title: 'Product', items: [
+            _FooterItem('Features', () { /* in-page anchor */ }),
+            _FooterItem('Pricing', () => context.go('/plans')),
+            _FooterItem('Security', () { /* in-page anchor */ }),
+            _FooterItem('Changelog', () => context.go('/help')),
+          ]),
+          const SizedBox(height: 22),
+          _FooterColumn(title: 'Company', items: [
+            _FooterItem('About', () { /* in-page anchor */ }),
+            _FooterItem('Enterprise', () => context.go('/enterprise')),
+            _FooterItem('Support', () => context.go('/help')),
+            _FooterItem('Contact', () => context.go('/help')),
+          ]),
+          const SizedBox(height: 22),
+          _FooterColumn(title: 'Legal', items: [
+            _FooterItem('Privacy Policy', () => context.go('/privacy')),
+            _FooterItem('Terms of Service', () => context.go('/terms')),
+            _FooterItem('HIPAA BAA', () => context.go('/hipaa-baa')),
+            _FooterItem('Delete Account', () => context.go('/delete-account')),
+          ]),
+
+          const SizedBox(height: 28),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.only(top: 18),
+            decoration: const BoxDecoration(
+              border: Border(top: BorderSide(color: AppColors.cardBorder, width: 1)),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  '© $year Pronote. All rights reserved.',
+                  style: const TextStyle(color: AppColors.slate500, fontSize: 12),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'Made with ❤️ for healthcare professionals',
+                  style: TextStyle(color: AppColors.slate500, fontSize: 12),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -1601,22 +1776,36 @@ class _Footer extends StatelessWidget {
   }
 }
 
-class _FooterLink extends StatelessWidget {
+class _FooterItem {
   final String label;
   final VoidCallback onTap;
-  const _FooterLink({required this.label, required this.onTap});
+  const _FooterItem(this.label, this.onTap);
+}
+
+class _FooterColumn extends StatelessWidget {
+  final String title;
+  final List<_FooterItem> items;
+  const _FooterColumn({required this.title, required this.items});
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-        child: Text(
-          label,
-          style: const TextStyle(color: AppColors.slate400, fontSize: 13, fontWeight: FontWeight.w500),
-        ),
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title,
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
+        const SizedBox(height: 12),
+        ...items.map((it) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: InkWell(
+                onTap: it.onTap,
+                child: Text(
+                  it.label,
+                  style: const TextStyle(color: AppColors.slate500, fontSize: 13, fontWeight: FontWeight.w500),
+                ),
+              ),
+            )),
+      ],
     );
   }
 }
