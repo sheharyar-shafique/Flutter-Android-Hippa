@@ -50,12 +50,22 @@ bool _isPublic(String loc) {
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final auth = ref.watch(authControllerProvider);
-
+  // IMPORTANT: do NOT `ref.watch(authControllerProvider)` here. Watching
+  // would rebuild the entire GoRouter every time the auth state changes
+  // (e.g. on login), and a fresh GoRouter resets to `initialLocation: '/'`
+  // — which is exactly the "logs in then briefly bounces to landing"
+  // glitch users hit on the APK.
+  //
+  // Instead, the router is built ONCE. We hand it a `refreshListenable`
+  // that fires whenever auth changes, and the redirect callback reads
+  // the latest auth state via `ref.read` each time it runs. Result: same
+  // GoRouter instance, fresh auth check on every navigation, no flash
+  // back to the landing page.
   return GoRouter(
     initialLocation: '/',
     refreshListenable: _AuthListenable(ref),
     redirect: (context, state) {
+      final auth = ref.read(authControllerProvider);
       if (auth.initialising) return '/splash';
 
       final loc = state.matchedLocation;
