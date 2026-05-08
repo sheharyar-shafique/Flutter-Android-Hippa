@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -89,8 +90,13 @@ class RecordingController extends StateNotifier<RecordingState> {
   }
 
   Future<String> _newRecordingPath() async {
-    final dir = await getApplicationDocumentsDirectory();
     final stamp = DateTime.now().millisecondsSinceEpoch;
+    // path_provider has no implementation on Flutter web. The `record`
+    // package's web implementation accepts an empty/relative path and
+    // streams the recording to a Blob URL itself, so we just return a
+    // sentinel filename and let the recorder handle it.
+    if (kIsWeb) return 'visit_$stamp.m4a';
+    final dir = await getApplicationDocumentsDirectory();
     final folder = Directory('${dir.path}/recordings');
     if (!folder.existsSync()) folder.createSync(recursive: true);
     return '${folder.path}/visit_$stamp.m4a';

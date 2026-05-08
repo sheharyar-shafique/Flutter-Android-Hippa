@@ -1,12 +1,29 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Read android/key.properties (gitignored). When the file is present we
+// use it to sign release builds; otherwise we fall back to debug signing
+// so `flutter build apk --release` still works on developer machines.
+val keyPropsFile = rootProject.file("key.properties")
+val keyProps = Properties().apply {
+    if (keyPropsFile.exists()) {
+        load(FileInputStream(keyPropsFile))
+    }
+}
+
 android {
     namespace = "com.pronoteai.scribe"
-    compileSdk = 35
+    // Several Flutter plugins (speech_to_text, record_android,
+    // shared_preferences_android, url_launcher_android,
+    // flutter_plugin_android_lifecycle) compile against SDK 36.
+    // Android SDKs are forward-compatible, so this is safe.
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -14,6 +31,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    @Suppress("DEPRECATION")
     kotlinOptions {
         jvmTarget = "17"
     }
@@ -28,12 +46,7 @@ android {
 
     signingConfigs {
         create("release") {
-            // Read from android/key.properties (gitignored).
-            // See README.md for keystore setup.
-            val keyPropsFile = rootProject.file("key.properties")
             if (keyPropsFile.exists()) {
-                val keyProps = java.util.Properties()
-                keyProps.load(java.io.FileInputStream(keyPropsFile))
                 storeFile = file(keyProps["storeFile"] as String)
                 storePassword = keyProps["storePassword"] as String
                 keyAlias = keyProps["keyAlias"] as String
@@ -44,10 +57,6 @@ android {
 
     buildTypes {
         release {
-            // Sign with release keystore if key.properties exists, otherwise
-            // fall back to debug signing so `flutter build apk --release` still
-            // works on developer machines without the keystore.
-            val keyPropsFile = rootProject.file("key.properties")
             signingConfig = if (keyPropsFile.exists()) {
                 signingConfigs.getByName("release")
             } else {
