@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -16,57 +18,173 @@ class LandingScreen extends StatefulWidget {
 class _LandingScreenState extends State<LandingScreen> {
   int _openFaq = -1;
 
+  // Section anchors used by the in-page nav links (Features, How It Works,
+  // Pricing, Security, About). Each chip in the nav bar calls
+  // Scrollable.ensureVisible on its key — Flutter then animates the scroll
+  // smoothly to put that section at the top.
+  final _featuresKey = GlobalKey();
+  final _howItWorksKey = GlobalKey();
+  final _pricingKey = GlobalKey();
+  final _securityKey = GlobalKey();
+  final _aboutKey = GlobalKey();
+
+  void _jumpTo(GlobalKey key) {
+    final ctx = key.currentContext;
+    if (ctx == null) return;
+    Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 550),
+      curve: Curves.easeInOutCubic,
+      alignment: 0.0,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgDeep,
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            backgroundColor: AppColors.slate900.withValues(alpha: 0.92),
-            pinned: true,
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            title: Row(
-              children: [
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: BoxDecoration(
-                    gradient: kEmeraldGradient,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.auto_awesome, size: 16, color: Colors.white),
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(96),
+        child: ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.slate900.withValues(alpha: 0.85),
+                border: Border(
+                  bottom: BorderSide(color: AppColors.cardBorder, width: 1),
                 ),
-                const SizedBox(width: 10),
-                const Text('Pronote', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
-              ],
+              ),
+              child: SafeArea(
+                bottom: false,
+                child: Column(
+                  children: [
+                    SizedBox(
+                      height: 52,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                gradient: kEmeraldGradient,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.auto_awesome, size: 16, color: Colors.white),
+                            ),
+                            const SizedBox(width: 10),
+                            const Text('Pronote',
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
+                            const Spacer(),
+                            TextButton(
+                              onPressed: () => context.go('/login'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.slate400,
+                                textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                              ),
+                              child: const Text('Sign in'),
+                            ),
+                            const SizedBox(width: 6),
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                gradient: kEmeraldGradient,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: TextButton(
+                                onPressed: () => context.go('/signup'),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                  textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                child: const Text('Start trial'),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      height: 42,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Row(
+                          children: [
+                            _NavChip(label: 'Features', onTap: () => _jumpTo(_featuresKey)),
+                            _NavChip(label: 'How It Works', onTap: () => _jumpTo(_howItWorksKey)),
+                            _NavChip(label: 'Pricing', onTap: () => _jumpTo(_pricingKey)),
+                            _NavChip(label: 'Security', onTap: () => _jumpTo(_securityKey)),
+                            _NavChip(label: 'About', onTap: () => _jumpTo(_aboutKey)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => context.go('/login'),
-                child: const Text('Sign in'),
-              ),
-              const SizedBox(width: 8),
-            ],
           ),
-          SliverList(
-            delegate: SliverChildListDelegate([
-              const _HeroSection(),
-              const _StatsBar(),
-              const _FeaturesSection(),
-              const _HowItWorksSection(),
-              const _PricingSection(),
-              const _SecuritySection(),
-              _FaqSection(
-                openIndex: _openFaq,
-                onToggle: (i) => setState(() => _openFaq = _openFaq == i ? -1 : i),
-              ),
-              const _FinalCta(),
-              const _Footer(),
-            ]),
+        ),
+      ),
+      body: SingleChildScrollView(
+        // SingleChildScrollView + Column so every section is in the widget
+        // tree at all times. This is what makes Scrollable.ensureVisible
+        // work for jumps to far-away sections — a SliverList would lazy-
+        // build children and the GlobalKey lookup would return null.
+        child: Column(
+          children: [
+            const _HeroSection(),
+            const _StatsBar(),
+            KeyedSubtree(key: _featuresKey, child: const _FeaturesSection()),
+            KeyedSubtree(key: _howItWorksKey, child: const _HowItWorksSection()),
+            KeyedSubtree(key: _pricingKey, child: const _PricingSection()),
+            KeyedSubtree(key: _securityKey, child: const _SecuritySection()),
+            KeyedSubtree(key: _aboutKey, child: const _AboutSection()),
+            _FaqSection(
+              openIndex: _openFaq,
+              onToggle: (i) => setState(() => _openFaq = _openFaq == i ? -1 : i),
+            ),
+            const _FinalCta(),
+            const _Footer(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NavChip extends StatelessWidget {
+  final String label;
+  final VoidCallback onTap;
+  const _NavChip({required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            decoration: BoxDecoration(
+              color: AppColors.cardBg,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.cardBorder),
+            ),
+            child: Text(
+              label,
+              style: const TextStyle(color: AppColors.slate400, fontSize: 12.5, fontWeight: FontWeight.w600),
+            ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -760,6 +878,129 @@ class _SecuritySection extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// About
+// ─────────────────────────────────────────────────────────────────
+
+class _AboutSection extends StatelessWidget {
+  const _AboutSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(24, 60, 24, 60),
+      color: AppColors.slate900,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Center(child: _SectionBadge(label: 'About', icon: Icons.info_outline)),
+          const SizedBox(height: 12),
+          const Center(
+            child: Text(
+              'Built by clinicians.\nFor clinicians.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -0.5, height: 1.2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Pronote was started after watching family-medicine doctors lose two hours every evening to documentation. Charts came home. Dinners got cold. Burnout was the only thing keeping pace with the EHR.',
+            style: TextStyle(color: AppColors.slate400, fontSize: 14, height: 1.6),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'We built Pronote to give that time back. Real clinicians designed every template. Every workflow was tested in a real clinic before it shipped. Every privacy decision was made with HIPAA, not just "compliance theatre", in mind.',
+            style: TextStyle(color: AppColors.slate400, fontSize: 14, height: 1.6),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: AppColors.cardBg,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.cardBorder),
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.flag_outlined, color: AppColors.emerald400, size: 20),
+                    SizedBox(width: 8),
+                    Text('Our promise',
+                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800)),
+                  ],
+                ),
+                SizedBox(height: 10),
+                _PromiseRow(text: 'Your patient data never trains an AI model.'),
+                _PromiseRow(text: 'You can export and delete everything, anytime.'),
+                _PromiseRow(text: 'A real human answers every support email — usually the same day.'),
+                _PromiseRow(text: 'New features ship monthly — request anything you need at support@pronoteai.com.'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          Center(
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 24,
+              runSpacing: 12,
+              children: [
+                _Stat(big: '50K+', sub: 'clinicians'),
+                _Stat(big: '2M+', sub: 'notes'),
+                _Stat(big: '7-day', sub: 'free trial'),
+                _Stat(big: '100%', sub: 'HIPAA-aligned'),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PromiseRow extends StatelessWidget {
+  final String text;
+  const _PromiseRow({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.check_circle, color: AppColors.emerald400, size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(text, style: const TextStyle(color: AppColors.slate400, fontSize: 13.5, height: 1.5)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Stat extends StatelessWidget {
+  final String big;
+  final String sub;
+  const _Stat({required this.big, required this.sub});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(big,
+            style: const TextStyle(color: AppColors.emerald400, fontSize: 22, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 2),
+        Text(sub, style: const TextStyle(color: AppColors.slate400, fontSize: 11)),
+      ],
     );
   }
 }
