@@ -87,7 +87,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             ),
             const SizedBox(height: 8),
             const Text(
-              '14-day free trial. No credit card required.',
+              '7-day free trial. No credit card required.',
               style: TextStyle(color: AppColors.slate400, fontSize: 14),
             ),
             const SizedBox(height: 28),

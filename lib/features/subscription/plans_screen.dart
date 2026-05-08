@@ -198,7 +198,7 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
             ),
             const SizedBox(height: 6),
             const Text(
-              '14-day free trial on every plan. No credit card required to try Pronote.',
+              '7-day free trial on every plan. No credit card required to try Pronote.',
               style: TextStyle(color: AppColors.slate400, fontSize: 13, height: 1.4),
             ),
             const SizedBox(height: 18),

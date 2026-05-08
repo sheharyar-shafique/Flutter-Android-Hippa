@@ -59,7 +59,7 @@ class TermsScreen extends StatelessWidget {
         LegalSection(
           title: '7. Subscription and Billing',
           paragraphs: [
-            'Paid plans bill monthly or annually via Stripe. The 14-day free trial does not require a credit card. After trial expiry, the account is locked until a paid plan is activated. Refunds are evaluated case-by-case — contact support@pronoteai.com.',
+            'Paid plans bill monthly or annually via Stripe. The 7-day free trial starts automatically when you sign up and does not require a credit card. After trial expiry, the account is locked until a paid plan is activated. Refunds are evaluated case-by-case — contact support@pronoteai.com.',
           ],
         ),
         LegalSection(

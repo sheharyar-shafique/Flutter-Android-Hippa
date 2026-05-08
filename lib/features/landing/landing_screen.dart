@@ -560,7 +560,7 @@ class _PricingSection extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           const Text(
-            '14-day free trial on all paid plans. No credit card required.',
+            '7-day free trial on all paid plans. No credit card required.',
             textAlign: TextAlign.center,
             style: TextStyle(color: AppColors.slate400, fontSize: 14),
           ),
@@ -784,7 +784,7 @@ class _FaqSection extends StatelessWidget {
           'Up to 2 hours of continuous recording per visit. The app warns at 1h55m and stops automatically at 2h.'),
       ('Can I import templates from another scribe?',
           'Yes — upload your existing template structure and we will format it. Custom templates support every section the major EHRs use (SOAP, HPI, A&P, ROS, etc.).'),
-      ('What happens after the 14-day trial?',
+      ('What happens after the 7-day trial?',
           'You pick a paid plan or your account locks until you do. We never auto-charge a credit card you did not enter.'),
       ('Do you train AI models on my patient data?',
           'No. Patient audio and notes are never used to train any model. They live only in your account, encrypted, and are deleted when you delete your account.'),
@@ -880,7 +880,7 @@ class _FinalCta extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           const Text(
-            'Start your 14-day free trial. No credit card required.',
+            'Start your 7-day free trial. No credit card required.',
             textAlign: TextAlign.center,
             style: TextStyle(color: AppColors.slate400, fontSize: 14),
           ),
