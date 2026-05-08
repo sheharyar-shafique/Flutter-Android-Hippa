@@ -101,6 +101,29 @@ class AppDrawer extends ConsumerWidget {
                     currentPath: currentPath,
                   ),
                   _DrawerItem(
+                    icon: Icons.bar_chart,
+                    label: 'Analytics',
+                    route: '/analytics',
+                    color: AppColors.warning,
+                    currentPath: currentPath,
+                  ),
+                  if ((user?.subscriptionPlan ?? '').startsWith('group'))
+                    _DrawerItem(
+                      icon: Icons.groups_outlined,
+                      label: 'Team',
+                      route: '/team',
+                      color: const Color(0xFFA78BFA),
+                      currentPath: currentPath,
+                    ),
+                  if (user?.isAdmin ?? false)
+                    _DrawerItem(
+                      icon: Icons.shield_outlined,
+                      label: 'Admin',
+                      route: '/admin',
+                      color: AppColors.danger,
+                      currentPath: currentPath,
+                    ),
+                  _DrawerItem(
                     icon: Icons.settings_outlined,
                     label: 'Settings',
                     route: '/settings',

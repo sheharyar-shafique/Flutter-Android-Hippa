@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/admin/admin_screen.dart';
+import '../../features/analytics/analytics_screen.dart';
 import '../../features/auth/auth_controller.dart';
 import '../../features/auth/forgot_password_screen.dart';
 import '../../features/auth/login_screen.dart';
@@ -9,7 +11,13 @@ import '../../features/auth/signup_screen.dart';
 import '../../features/capture/capture_screen.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/dictation/dictation_screen.dart';
+import '../../features/enterprise/enterprise_screen.dart';
 import '../../features/help/help_center_screen.dart';
+import '../../features/landing/landing_screen.dart';
+import '../../features/legal/delete_account_info_screen.dart';
+import '../../features/legal/hipaa_baa_screen.dart';
+import '../../features/legal/privacy_screen.dart';
+import '../../features/legal/terms_screen.dart';
 import '../../features/notes/note_editor_screen.dart';
 import '../../features/notes/notes_list_screen.dart';
 import '../../features/patients/patient_detail_screen.dart';
@@ -17,8 +25,27 @@ import '../../features/patients/patients_list_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/splash/splash_screen.dart';
 import '../../features/subscription/subscription_locked_screen.dart';
+import '../../features/team/team_screen.dart';
+import '../../features/templates/template_editor_screen.dart';
 import '../../features/templates/templates_screen.dart';
 import '../../features/upload/upload_screen.dart';
+
+const _kPublicPaths = {
+  '/',
+  '/login',
+  '/signup',
+  '/forgot-password',
+  '/privacy',
+  '/terms',
+  '/hipaa-baa',
+  '/enterprise',
+  '/delete-account',
+};
+
+bool _isPublic(String loc) {
+  if (_kPublicPaths.contains(loc)) return true;
+  return loc == '/help'; // help center reachable without login too
+}
 
 final routerProvider = Provider<GoRouter>((ref) {
   final auth = ref.watch(authControllerProvider);
@@ -40,35 +67,35 @@ final routerProvider = Provider<GoRouter>((ref) {
           return null;
         }
 
-        if (isLockedRoute || loc == '/splash' || isAuthRoute || loc == '/') {
+        // Already signed in: bounce them out of guest-only routes.
+        if (loc == '/splash' || isAuthRoute || isLockedRoute) {
           return '/dashboard';
         }
+        // / (landing) is fine — they can browse it logged-in if they want.
         return null;
       }
 
-      // Unauthenticated — only auth surfaces are reachable.
-      if (loc == '/splash' ||
-          loc == '/subscription-locked' ||
-          loc.startsWith('/dashboard') ||
-          loc.startsWith('/capture') ||
-          loc.startsWith('/notes') ||
-          loc.startsWith('/patients') ||
-          loc.startsWith('/templates') ||
-          loc.startsWith('/upload') ||
-          loc.startsWith('/dictation') ||
-          loc.startsWith('/settings') ||
-          loc.startsWith('/help')) {
-        return '/login';
-      }
-      return null;
+      // Unauthenticated — block app surfaces, allow public ones.
+      if (_isPublic(loc)) return null;
+      if (loc == '/splash') return '/';
+      return '/login';
     },
     routes: [
-      GoRoute(path: '/', redirect: (_, __) => '/login'),
+      // Public surfaces
+      GoRoute(path: '/', builder: (_, __) => const LandingScreen()),
       GoRoute(path: '/splash', builder: (_, __) => const SplashScreen()),
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(path: '/signup', builder: (_, __) => const SignupScreen()),
       GoRoute(path: '/forgot-password', builder: (_, __) => const ForgotPasswordScreen()),
       GoRoute(path: '/subscription-locked', builder: (_, __) => const SubscriptionLockedScreen()),
+
+      // Legal / info (reachable from landing footer + settings links)
+      GoRoute(path: '/privacy', builder: (_, __) => const PrivacyScreen()),
+      GoRoute(path: '/terms', builder: (_, __) => const TermsScreen()),
+      GoRoute(path: '/hipaa-baa', builder: (_, __) => const HipaaBaaScreen()),
+      GoRoute(path: '/delete-account', builder: (_, __) => const DeleteAccountInfoScreen()),
+      GoRoute(path: '/enterprise', builder: (_, __) => const EnterpriseScreen()),
+      GoRoute(path: '/help', builder: (_, __) => const HelpCenterScreen()),
 
       // Authenticated app surfaces
       GoRoute(path: '/dashboard', builder: (_, __) => const DashboardScreen()),
@@ -86,8 +113,15 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => PatientDetailScreen(patientId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/templates', builder: (_, __) => const TemplatesScreen()),
+      GoRoute(path: '/templates/new', builder: (_, __) => const TemplateEditorScreen()),
+      GoRoute(
+        path: '/templates/:id/edit',
+        builder: (_, state) => TemplateEditorScreen(templateId: state.pathParameters['id']!),
+      ),
+      GoRoute(path: '/analytics', builder: (_, __) => const AnalyticsScreen()),
+      GoRoute(path: '/team', builder: (_, __) => const TeamScreen()),
+      GoRoute(path: '/admin', builder: (_, __) => const AdminScreen()),
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
-      GoRoute(path: '/help', builder: (_, __) => const HelpCenterScreen()),
     ],
     errorBuilder: (context, state) => Scaffold(
       body: Center(

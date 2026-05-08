@@ -53,19 +53,19 @@ class SettingsScreen extends ConsumerWidget {
               icon: Icons.privacy_tip_outlined,
               label: 'Privacy policy',
               color: AppColors.info,
-              onTap: () => _openExternal('https://pronoteai.com/privacy'),
+              onTap: () => context.go('/privacy'),
             ),
             _SettingsTile(
               icon: Icons.description_outlined,
               label: 'Terms of service',
               color: AppColors.info,
-              onTap: () => _openExternal('https://pronoteai.com/terms'),
+              onTap: () => context.go('/terms'),
             ),
             _SettingsTile(
               icon: Icons.shield_outlined,
               label: 'HIPAA Business Associate Agreement',
               color: AppColors.emerald400,
-              onTap: () => _openExternal('https://pronoteai.com/hipaa-baa'),
+              onTap: () => context.go('/hipaa-baa'),
             ),
 
             const SizedBox(height: 18),

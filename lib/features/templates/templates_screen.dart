@@ -26,6 +26,14 @@ class TemplatesScreen extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => pickerMode ? Navigator.pop(context) : context.go('/dashboard'),
         ),
+        actions: [
+          if (!pickerMode)
+            IconButton(
+              tooltip: 'Create template',
+              icon: const Icon(Icons.add),
+              onPressed: () => context.go('/templates/new'),
+            ),
+        ],
       ),
       body: SafeArea(child: _buildBody(context, state, controller)),
     );
