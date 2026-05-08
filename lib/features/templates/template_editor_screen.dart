@@ -44,15 +44,19 @@ Plan:
   void initState() {
     super.initState();
     if (widget.templateId != null) {
-      // Hydrate from existing template if editing.
+      // Hydrate from existing template if editing. Look in the user's
+      // custom templates first, then fall back to the bundled defaults.
       Future.microtask(() {
-        final templates = ref.read(templatesControllerProvider).templates;
-        final t = templates.where((x) => x.id == widget.templateId).firstOrNull;
+        final state = ref.read(templatesControllerProvider);
+        final pool = [...state.customTemplates, ...state.allTemplates];
+        final t = pool.where((x) => x.id == widget.templateId).firstOrNull;
         if (t != null) {
           _nameCtrl.text = t.name;
-          _specialtyCtrl.text = t.specialty ?? '';
-          _descCtrl.text = t.description ?? '';
-          _structureCtrl.text = t.structure ?? _starterStructure;
+          _specialtyCtrl.text = t.specialty;
+          _descCtrl.text = t.description;
+          _structureCtrl.text = t.sections.isEmpty
+              ? _starterStructure
+              : t.sections.join('\n');
         }
       });
     } else {
