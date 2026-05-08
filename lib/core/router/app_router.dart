@@ -9,8 +9,10 @@ import '../../features/auth/signup_screen.dart';
 import '../../features/capture/capture_screen.dart';
 import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/dictation/dictation_screen.dart';
+import '../../features/help/help_center_screen.dart';
 import '../../features/notes/note_editor_screen.dart';
 import '../../features/notes/notes_list_screen.dart';
+import '../../features/patients/patient_detail_screen.dart';
 import '../../features/patients/patients_list_screen.dart';
 import '../../features/settings/settings_screen.dart';
 import '../../features/splash/splash_screen.dart';
@@ -54,7 +56,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           loc.startsWith('/templates') ||
           loc.startsWith('/upload') ||
           loc.startsWith('/dictation') ||
-          loc.startsWith('/settings')) {
+          loc.startsWith('/settings') ||
+          loc.startsWith('/help')) {
         return '/login';
       }
       return null;
@@ -78,8 +81,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (_, state) => NoteEditorScreen(noteId: state.pathParameters['id']!),
       ),
       GoRoute(path: '/patients', builder: (_, __) => const PatientsListScreen()),
+      GoRoute(
+        path: '/patients/:id',
+        builder: (_, state) => PatientDetailScreen(patientId: state.pathParameters['id']!),
+      ),
       GoRoute(path: '/templates', builder: (_, __) => const TemplatesScreen()),
       GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
+      GoRoute(path: '/help', builder: (_, __) => const HelpCenterScreen()),
     ],
     errorBuilder: (context, state) => Scaffold(
       body: Center(

@@ -253,7 +253,7 @@ class _PatientsListScreenState extends ConsumerState<PatientsListScreen> {
         separatorBuilder: (_, __) => const SizedBox(height: 10),
         itemBuilder: (_, i) => _PatientCard(
           patient: state.patients[i],
-          onTap: () {},
+          onTap: () => context.go('/patients/${state.patients[i].id}'),
         ),
       ),
     );

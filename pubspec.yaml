@@ -30,6 +30,9 @@ dependencies:
   audioplayers: ^6.1.0
   path_provider: ^2.1.4
 
+  # Live dictation (Dictation page) — on-device speech-to-text streaming
+  speech_to_text: ^7.0.0
+
   # Permissions
   permission_handler: ^11.3.1
 
@@ -54,6 +57,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/images/
-    - assets/icons/
+  # Asset folders will be added back when we ship icons / fonts. For now keep
+  # the section empty so `flutter run` doesn't error on missing dirs.
+

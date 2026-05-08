@@ -107,6 +107,13 @@ class AppDrawer extends ConsumerWidget {
                     color: AppColors.slate400,
                     currentPath: currentPath,
                   ),
+                  _DrawerItem(
+                    icon: Icons.help_outline,
+                    label: 'Help center',
+                    route: '/help',
+                    color: AppColors.slate400,
+                    currentPath: currentPath,
+                  ),
                 ],
               ),
             ),
