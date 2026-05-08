@@ -54,4 +54,53 @@ class AudioApi {
       throw ApiException.fromDio(e);
     }
   }
+
+  /// Asks the backend to summarise the patient's selected notes into a
+  /// structured treatment plan (called from the Treatment Plan tab on the
+  /// patient page). Mirrors `audioApi.generateTreatmentPlan` from the web.
+  Future<String> generateTreatmentPlan({
+    required List<String> noteIds,
+    required String patientName,
+  }) async {
+    try {
+      final res = await _dio.post('/audio/treatment-plan', data: {
+        'noteIds': noteIds,
+        'patientName': patientName,
+      });
+      final data = res.data;
+      if (data is Map<String, dynamic>) {
+        return (data['plan'] ?? data['content'] ?? '') as String;
+      }
+      return '';
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
+  /// Asks the backend to write a clinical report covering one diagnosis
+  /// across a date range. Mirrors `audioApi.generateReport` from the web.
+  Future<String> generateReport({
+    required List<String> noteIds,
+    required String diagnosis,
+    required String patientName,
+    required String startDate,
+    required String endDate,
+  }) async {
+    try {
+      final res = await _dio.post('/audio/report', data: {
+        'noteIds': noteIds,
+        'diagnosis': diagnosis,
+        'patientName': patientName,
+        'startDate': startDate,
+        'endDate': endDate,
+      });
+      final data = res.data;
+      if (data is Map<String, dynamic>) {
+        return (data['content'] ?? data['report'] ?? '') as String;
+      }
+      return '';
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
 }
