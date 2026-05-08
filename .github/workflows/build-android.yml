@@ -43,22 +43,26 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Build debug APK
-        # Debug APK: no keystore needed, sideload-friendly. Switch to
-        # `flutter build apk --release` once the release keystore is wired
-        # via key.properties (see README.md).
-        run: flutter build apk --debug
+      - name: Build release APK
+        # We use --release (not --debug) so the manifest does NOT carry
+        # android:testOnly="true". testOnly APKs refuse to sideload via
+        # normal "open APK file" install — they require `adb install -t`.
+        # The build.gradle.kts buildTypes.release block falls back to
+        # debug signing when key.properties is absent, so this still
+        # works without a real release keystore — clients can sideload
+        # the resulting APK like any normal app.
+        run: flutter build apk --release
 
       - name: Rename APK with build number
         run: |
-          cp build/app/outputs/flutter-apk/app-debug.apk \
-             build/app/outputs/flutter-apk/pronote-debug-${{ github.run_number }}.apk
+          cp build/app/outputs/flutter-apk/app-release.apk \
+             build/app/outputs/flutter-apk/pronote-${{ github.run_number }}.apk
 
       - name: Upload APK as workflow artifact
         uses: actions/upload-artifact@v4
         with:
-          name: pronote-android-debug
-          path: build/app/outputs/flutter-apk/pronote-debug-${{ github.run_number }}.apk
+          name: pronote-android
+          path: build/app/outputs/flutter-apk/pronote-${{ github.run_number }}.apk
           retention-days: 90
 
       - name: Publish APK as GitHub Release (only on tag)
@@ -68,16 +72,16 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: Pronote Android ${{ github.ref_name }}
           body: |
-            Debug-signed Android build for client testing.
+            Release-signed Android build for client testing.
 
             Install:
-            1. Download `pronote-debug-${{ github.run_number }}.apk` below
+            1. Download `pronote-${{ github.run_number }}.apk` below
             2. Open it on your Android phone
             3. Allow "install from this source" if prompted
             4. Tap Install
 
             Built from commit ${{ github.sha }}.
-          files: build/app/outputs/flutter-apk/pronote-debug-${{ github.run_number }}.apk
+          files: build/app/outputs/flutter-apk/pronote-${{ github.run_number }}.apk
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
