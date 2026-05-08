@@ -840,62 +840,422 @@ class _EnterprisePlanCard extends StatelessWidget {
 class _SecuritySection extends StatelessWidget {
   const _SecuritySection();
 
+  static const _trustBar = [
+    _SecTrust(Icons.shield, 'HIPAA Compliant', [Color(0xFF34D399), Color(0xFF14B8A6)]),
+    _SecTrust(Icons.lock, 'AES-256-GCM Encrypted', [Color(0xFF60A5FA), Color(0xFF6366F1)]),
+    _SecTrust(Icons.refresh, '24h JWT Sessions', [Color(0xFFA78BFA), Color(0xFF8B5CF6)]),
+    _SecTrust(Icons.bolt, 'Rate Limited APIs', [Color(0xFFFBBF24), Color(0xFFF97316)]),
+  ];
+
+  static const _detailCards = [
+    _SecDetail(
+      icon: Icons.lock,
+      gradient: [Color(0xFF34D399), Color(0xFF14B8A6)],
+      title: 'AES-256-GCM PHI Encryption',
+      desc: 'All Protected Health Information is encrypted at rest using AES-256-GCM — the gold standard for medical data. Each record gets a unique IV and authentication tag to detect tampering.',
+      badge: 'At Rest',
+    ),
+    _SecDetail(
+      icon: Icons.shield,
+      gradient: [Color(0xFF60A5FA), Color(0xFF6366F1)],
+      title: 'HIPAA-Compliant Audit Logs',
+      desc: 'Every data access, login attempt, note creation, and admin action is recorded in immutable audit logs with timestamps, IP addresses, and user agents for full regulatory traceability.',
+      badge: 'Compliance',
+    ),
+    _SecDetail(
+      icon: Icons.refresh,
+      gradient: [Color(0xFFA78BFA), Color(0xFF8B5CF6)],
+      title: 'JWT Session Management',
+      desc: 'Authentication tokens expire in 24 hours per HIPAA session management requirements. Tokens are signed with a 256-bit secret and verified on every protected API request.',
+      badge: 'Auth',
+    ),
+    _SecDetail(
+      icon: Icons.bolt,
+      gradient: [Color(0xFFFBBF24), Color(0xFFF97316)],
+      title: 'Rate Limiting & Brute Force Protection',
+      desc: 'API endpoints are rate-limited to 100 requests/15 min per IP. Login attempts are tracked — after 5 failures, accounts are automatically locked for 15 minutes to prevent brute force attacks.',
+      badge: 'DDoS Shield',
+    ),
+    _SecDetail(
+      icon: Icons.people,
+      gradient: [Color(0xFFFB7185), Color(0xFFEC4899)],
+      title: 'Role-Based Access Control',
+      desc: 'Strict RBAC separates clinician and admin privileges. Users can only access their own patient notes. Admins have dedicated routes with additional authentication guards.',
+      badge: 'RBAC',
+    ),
+    _SecDetail(
+      icon: Icons.psychology,
+      gradient: [Color(0xFF22D3EE), Color(0xFF0EA5E9)],
+      title: 'bcrypt Password Hashing',
+      desc: 'Passwords are never stored in plain text. bcrypt with cost factor 12 is used to hash all passwords — making offline dictionary attacks computationally infeasible.',
+      badge: 'Credentials',
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final items = [
-      ('TLS 1.3', 'In transit', AppColors.emerald400),
-      ('AES-256', 'At rest', AppColors.info),
-      ('SOC 2', 'Type II ready', const Color(0xFFA78BFA)),
-      ('HIPAA', 'BAA on every plan', AppColors.warning),
-    ];
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 60, 24, 60),
-      color: AppColors.slate800,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.slate800, AppColors.slate900],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
       child: Column(
         children: [
-          const _SectionBadge(label: 'Security & Compliance', icon: Icons.shield_outlined),
+          // Header
+          const _SectionBadge(label: 'Security', icon: Icons.lock_outline),
+          const SizedBox(height: 14),
+          RichText(
+            textAlign: TextAlign.center,
+            text: const TextSpan(
+              style: TextStyle(color: Colors.white, fontSize: 30, fontWeight: FontWeight.w900, letterSpacing: -0.5, height: 1.2),
+              children: [
+                TextSpan(text: 'Enterprise-grade '),
+                TextSpan(text: 'security.', style: TextStyle(color: AppColors.emerald400)),
+              ],
+            ),
+          ),
           const SizedBox(height: 12),
           const Text(
-            'Healthcare-grade.\nFrom day one.',
+            'Every layer of Pronote is built with HIPAA compliance and patient data protection as the foundation — not an afterthought.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -0.5, height: 1.2),
+            style: TextStyle(color: AppColors.slate400, fontSize: 14, height: 1.55),
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Built with the security primitives modern healthcare actually needs — not a checkbox compliance theatre.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.slate400, fontSize: 14, height: 1.5),
-          ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
+
+          // Hero trust bar — 4 small cards
           GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.3,
-            children: items
-                .map((i) => Container(
-                      padding: const EdgeInsets.all(16),
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+            childAspectRatio: 1.45,
+            children: _trustBar.map((t) => _TrustCard(item: t)).toList(),
+          ),
+          const SizedBox(height: 28),
+
+          // Main 6-card detail grid (single column on phone for readability)
+          ..._detailCards.map((c) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _SecurityDetailCard(item: c),
+              )),
+
+          const SizedBox(height: 8),
+
+          // Transport + Infrastructure row
+          const _SecondaryCard(
+            icon: Icons.shield,
+            iconGradient: [Color(0xFF34D399), Color(0xFF14B8A6)],
+            title: 'TLS Encryption in Transit',
+            label: 'Transport Security',
+            labelColor: AppColors.emerald400,
+            desc: 'All data between client and server is encrypted via HTTPS/TLS. HTTP security headers are enforced using Helmet.js — preventing XSS, clickjacking, MIME sniffing, and other common web attacks.',
+            chips: ['HTTPS / TLS', 'Helmet.js Headers', 'CORS Policy', 'XSS Protection', 'HSTS Enabled'],
+            chipColor: AppColors.emerald400,
+          ),
+          const SizedBox(height: 12),
+          const _SecondaryCard(
+            icon: Icons.bolt,
+            iconGradient: [Color(0xFF60A5FA), Color(0xFF6366F1)],
+            title: 'Secure Infrastructure',
+            label: 'Cloud Architecture',
+            labelColor: AppColors.info,
+            desc: 'Backend runs on Render with environment-variable-only secrets — no keys in source code. Supabase provides a SOC 2 Type II certified database with row-level security policies.',
+            chips: ['Render Cloud', 'Supabase RLS', 'Env-Only Secrets', 'SOC 2 Type II', 'No Plaintext Keys'],
+            chipColor: AppColors.info,
+          ),
+          const SizedBox(height: 24),
+
+          // HIPAA compliance banner
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [
+                AppColors.emerald500.withValues(alpha: 0.16),
+                AppColors.teal500.withValues(alpha: 0.06),
+                AppColors.emerald500.withValues(alpha: 0.16),
+              ]),
+              borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: AppColors.emerald500.withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.emerald500.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(50),
+                    border: Border.all(color: AppColors.emerald500.withValues(alpha: 0.4)),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.shield, color: AppColors.emerald400, size: 14),
+                      SizedBox(width: 6),
+                      Text('HIPAA Compliant Platform',
+                          style: TextStyle(color: AppColors.emerald400, fontSize: 12, fontWeight: FontWeight.w800)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  "Your patients' privacy is our highest priority",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900, height: 1.25),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Pronote is built from the ground up to meet and exceed HIPAA requirements. Every technical safeguard — from AES-256 encryption to 24-hour session expiry — is intentionally designed for clinical environments.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.slate400, fontSize: 13, height: 1.55),
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: const [
+                    _CheckBadge('Encryption at Rest'),
+                    _CheckBadge('Encryption in Transit'),
+                    _CheckBadge('Access Controls'),
+                    _CheckBadge('Audit Logging'),
+                    _CheckBadge('Session Timeout'),
+                    _CheckBadge('Breach Notification Ready'),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SecTrust {
+  final IconData icon;
+  final String label;
+  final List<Color> gradient;
+  const _SecTrust(this.icon, this.label, this.gradient);
+}
+
+class _TrustCard extends StatelessWidget {
+  final _SecTrust item;
+  const _TrustCard({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.cardBg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: item.gradient),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Icon(item.icon, color: Colors.white, size: 19),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            item.label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: Colors.white, fontSize: 11.5, fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SecDetail {
+  final IconData icon;
+  final List<Color> gradient;
+  final String title;
+  final String desc;
+  final String badge;
+  const _SecDetail({
+    required this.icon,
+    required this.gradient,
+    required this.title,
+    required this.desc,
+    required this.badge,
+  });
+}
+
+class _SecurityDetailCard extends StatelessWidget {
+  final _SecDetail item;
+  const _SecurityDetailCard({required this.item});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.cardBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: item.gradient),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(item.icon, color: Colors.white, size: 21),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: item.gradient.first.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: item.gradient.first.withValues(alpha: 0.3)),
+                ),
+                child: Text(
+                  item.badge,
+                  style: TextStyle(color: item.gradient.first, fontSize: 10.5, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(item.title,
+              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w800, height: 1.3)),
+          const SizedBox(height: 6),
+          Text(item.desc,
+              style: const TextStyle(color: AppColors.slate400, fontSize: 13, height: 1.55)),
+        ],
+      ),
+    );
+  }
+}
+
+class _SecondaryCard extends StatelessWidget {
+  final IconData icon;
+  final List<Color> iconGradient;
+  final String title;
+  final String label;
+  final Color labelColor;
+  final String desc;
+  final List<String> chips;
+  final Color chipColor;
+
+  const _SecondaryCard({
+    required this.icon,
+    required this.iconGradient,
+    required this.title,
+    required this.label,
+    required this.labelColor,
+    required this.desc,
+    required this.chips,
+    required this.chipColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: AppColors.cardBg,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: iconGradient),
+                  borderRadius: BorderRadius.circular(13),
+                ),
+                child: Icon(icon, color: Colors.white, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title,
+                        style: const TextStyle(color: Colors.white, fontSize: 15.5, fontWeight: FontWeight.w800)),
+                    const SizedBox(height: 2),
+                    Text(label,
+                        style: TextStyle(color: labelColor, fontSize: 11.5, fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(desc, style: const TextStyle(color: AppColors.slate400, fontSize: 13, height: 1.55)),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: chips
+                .map((c) => Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: AppColors.cardBg,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: i.$3.withValues(alpha: 0.3)),
+                        color: chipColor.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(50),
+                        border: Border.all(color: chipColor.withValues(alpha: 0.3)),
                       ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(i.$1, style: TextStyle(color: i.$3, fontSize: 22, fontWeight: FontWeight.w900)),
-                          const SizedBox(height: 4),
-                          Text(i.$2,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(color: AppColors.slate400, fontSize: 12)),
-                        ],
-                      ),
+                      child: Text(c,
+                          style: TextStyle(color: chipColor, fontSize: 11, fontWeight: FontWeight.w600)),
                     ))
                 .toList(),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CheckBadge extends StatelessWidget {
+  final String label;
+  const _CheckBadge(this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.emerald500.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(50),
+        border: Border.all(color: AppColors.emerald500.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('✓', style: TextStyle(color: AppColors.emerald400, fontSize: 12, fontWeight: FontWeight.w800)),
+          const SizedBox(width: 4),
+          Text(label,
+              style: const TextStyle(color: AppColors.emerald400, fontSize: 11.5, fontWeight: FontWeight.w600)),
         ],
       ),
     );
