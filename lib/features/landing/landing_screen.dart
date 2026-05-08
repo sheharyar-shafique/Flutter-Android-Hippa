@@ -3,6 +3,7 @@ import 'dart:ui' show ImageFilter;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/models/plan.dart';
 import '../../core/theme/app_theme.dart';
 
 /// Marketing surface — what unauthenticated users see at "/".
@@ -633,36 +634,6 @@ class _PricingSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final plans = [
-      _Plan(
-        name: 'Solo',
-        price: '\$49',
-        period: '/ month',
-        desc: 'For individual clinicians.',
-        features: ['Unlimited notes', '30+ specialty templates', 'HIPAA BAA included', 'Up to 2 hours per visit', 'Email support'],
-        ctaLabel: 'Start free trial',
-        highlight: false,
-      ),
-      _Plan(
-        name: 'Group',
-        price: '\$39',
-        period: '/ user / month',
-        desc: 'For practices with 5+ clinicians.',
-        features: ['Everything in Solo', 'Multi-user team management', 'Shared template library', 'Priority support', 'Group analytics'],
-        ctaLabel: 'Start free trial',
-        highlight: true,
-      ),
-      _Plan(
-        name: 'Enterprise',
-        price: 'Custom',
-        period: '',
-        desc: 'For health systems and large groups.',
-        features: ['Everything in Group', 'EHR integrations', 'Dedicated account manager', 'Custom SLA', 'On-premise deployment available'],
-        ctaLabel: 'Contact sales',
-        highlight: false,
-      ),
-    ];
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(24, 60, 24, 60),
@@ -683,39 +654,25 @@ class _PricingSection extends StatelessWidget {
             style: TextStyle(color: AppColors.slate400, fontSize: 14),
           ),
           const SizedBox(height: 28),
-          ...plans.map((p) => Padding(
+          // Render the 4 real plans from kPlans (same source the /plans
+          // checkout screen uses) so pricing copy can never drift between
+          // landing and checkout.
+          ...kPlans.map((p) => Padding(
                 padding: const EdgeInsets.only(bottom: 14),
-                child: _PlanCard(plan: p),
+                child: _LandingPlanCard(plan: p),
               )),
+          // Enterprise lives outside kPlans because it has no self-serve
+          // Stripe price — it routes to a "Contact sales" page.
+          const _EnterprisePlanCard(),
         ],
       ),
     );
   }
 }
 
-class _Plan {
-  final String name;
-  final String price;
-  final String period;
-  final String desc;
-  final List<String> features;
-  final String ctaLabel;
-  final bool highlight;
-
-  _Plan({
-    required this.name,
-    required this.price,
-    required this.period,
-    required this.desc,
-    required this.features,
-    required this.ctaLabel,
-    required this.highlight,
-  });
-}
-
-class _PlanCard extends StatelessWidget {
-  final _Plan plan;
-  const _PlanCard({required this.plan});
+class _LandingPlanCard extends StatelessWidget {
+  final Plan plan;
+  const _LandingPlanCard({required this.plan});
 
   @override
   Widget build(BuildContext context) {
@@ -737,34 +694,38 @@ class _PlanCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (plan.highlight)
+          if (plan.badge != null)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
                 color: AppColors.emerald500,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: const Text('MOST POPULAR',
-                  style: TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 1)),
+              child: Text(plan.badge!,
+                  style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800, letterSpacing: 1)),
             ),
-          if (plan.highlight) const SizedBox(height: 10),
+          if (plan.badge != null) const SizedBox(height: 10),
           Text(plan.name,
-              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
+              style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
           const SizedBox(height: 4),
-          Text(plan.desc, style: const TextStyle(color: AppColors.slate400, fontSize: 13)),
+          Text(plan.description, style: const TextStyle(color: AppColors.slate400, fontSize: 13)),
           const SizedBox(height: 14),
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(plan.price,
                   style: const TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w900, letterSpacing: -1)),
-              if (plan.period.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 6, left: 4),
-                  child: Text(plan.period, style: const TextStyle(color: AppColors.slate400, fontSize: 13)),
-                ),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6, left: 4),
+                child: Text(plan.period, style: const TextStyle(color: AppColors.slate400, fontSize: 13)),
+              ),
             ],
           ),
+          if (plan.secondary != null) ...[
+            const SizedBox(height: 2),
+            Text(plan.secondary!,
+                style: const TextStyle(color: AppColors.emerald400, fontSize: 13, fontWeight: FontWeight.w700)),
+          ],
           const SizedBox(height: 14),
           ...plan.features.map((f) => Padding(
                 padding: const EdgeInsets.only(bottom: 6),
@@ -773,7 +734,7 @@ class _PlanCard extends StatelessWidget {
                   children: [
                     const Icon(Icons.check_circle, color: AppColors.emerald400, size: 16),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(f, style: const TextStyle(color: Colors.white, fontSize: 13))),
+                    Expanded(child: Text(f, style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4))),
                   ],
                 ),
               )),
@@ -790,22 +751,81 @@ class _PlanCard extends StatelessWidget {
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: () => context.go('/signup'),
+                        onTap: () => context.go('/plans'),
                         borderRadius: BorderRadius.circular(14),
-                        child: Center(
-                          child: Text(plan.ctaLabel,
-                              style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800)),
+                        child: const Center(
+                          child: Text('Start free trial',
+                              style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800)),
                         ),
                       ),
                     ),
                   )
                 : OutlinedButton(
-                    onPressed: () => context.go(plan.name == 'Enterprise' ? '/enterprise' : '/plans'),
+                    onPressed: () => context.go('/plans'),
                     style: OutlinedButton.styleFrom(
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
-                    child: Text(plan.ctaLabel),
+                    child: const Text('Start free trial'),
                   ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EnterprisePlanCard extends StatelessWidget {
+  const _EnterprisePlanCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: AppColors.cardBg,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Enterprise',
+              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+          const SizedBox(height: 4),
+          const Text('For health systems and large groups.',
+              style: TextStyle(color: AppColors.slate400, fontSize: 13)),
+          const SizedBox(height: 14),
+          const Text('Custom',
+              style: TextStyle(color: Colors.white, fontSize: 36, fontWeight: FontWeight.w900, letterSpacing: -1)),
+          const SizedBox(height: 14),
+          ...const [
+            'Everything in Group',
+            'EHR integrations',
+            'Dedicated account manager',
+            'Custom SLA',
+            'On-premise deployment available',
+          ].map((f) => Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.check_circle, color: AppColors.emerald400, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(f, style: const TextStyle(color: Colors.white, fontSize: 13, height: 1.4))),
+                  ],
+                ),
+              )),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            height: 48,
+            child: OutlinedButton(
+              onPressed: () => context.go('/enterprise'),
+              style: OutlinedButton.styleFrom(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+              child: const Text('Contact sales'),
+            ),
           ),
         ],
       ),
