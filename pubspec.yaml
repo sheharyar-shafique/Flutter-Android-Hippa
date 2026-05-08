@@ -1,0 +1,59 @@
+name: pronote
+description: Pronote — AI Medical Scribe (native Flutter)
+publish_to: none
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.4.0 <4.0.0"
+  flutter: ">=3.22.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+
+  # State management
+  flutter_riverpod: ^2.5.1
+
+  # Networking
+  dio: ^5.7.0
+
+  # Routing
+  go_router: ^14.2.7
+
+  # Storage
+  flutter_secure_storage: ^9.2.2
+  shared_preferences: ^2.3.2
+
+  # Audio recording (Capture page)
+  record: ^5.1.2
+  audioplayers: ^6.1.0
+  path_provider: ^2.1.4
+
+  # Permissions
+  permission_handler: ^11.3.1
+
+  # File picking (audio uploads)
+  file_picker: ^8.1.2
+
+  # UI helpers
+  google_fonts: ^6.2.1
+  flutter_svg: ^2.0.10+1
+  intl: ^0.19.0
+
+  # Native features
+  package_info_plus: ^8.0.2
+  device_info_plus: ^10.1.2
+  url_launcher: ^6.3.1
+  share_plus: ^10.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/icons/
