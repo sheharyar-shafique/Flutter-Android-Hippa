@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_theme.dart';
+import '../../widgets/app_drawer.dart';
 import '../auth/auth_controller.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -14,6 +15,7 @@ class DashboardScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.bgPrimary,
+      drawer: const AppDrawer(),
       appBar: AppBar(
         backgroundColor: AppColors.slate900.withValues(alpha: 0.95),
         title: Row(
@@ -217,9 +219,9 @@ class _QuickActionsGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final actions = [
       const _ActionTile(icon: Icons.mic, label: 'Capture', sub: 'Record visit', color: AppColors.emerald500, route: '/capture'),
-      const _ActionTile(icon: Icons.chat_bubble_outline, label: 'Dictation', sub: 'Coming soon', color: Color(0xFFA78BFA), route: null),
-      const _ActionTile(icon: Icons.upload_outlined, label: 'Upload', sub: 'Coming soon', color: AppColors.info, route: null),
+      const _ActionTile(icon: Icons.upload_outlined, label: 'Upload', sub: 'Upload audio', color: AppColors.info, route: '/upload'),
       const _ActionTile(icon: Icons.description_outlined, label: 'Notes', sub: 'Browse all', color: Color(0xFFFB7185), route: '/notes'),
+      const _ActionTile(icon: Icons.people_outline, label: 'Patients', sub: 'Manage list', color: Color(0xFF60A5FA), route: '/patients'),
     ];
 
     return GridView.count(
