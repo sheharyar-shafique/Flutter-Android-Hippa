@@ -14,7 +14,7 @@ class UsersApi {
 
   Future<User> updateProfile({String? name, String? specialty}) async {
     try {
-      final res = await _dio.put('/users/me', data: {
+      final res = await _dio.put('/users/profile', data: {
         if (name != null) 'name': name,
         if (specialty != null) 'specialty': specialty,
       });
@@ -41,9 +41,7 @@ class UsersApi {
   /// HIPAA-required: irrevocably wipes the account + all PHI.
   Future<void> deleteAccount({required String confirmEmail}) async {
     try {
-      await _dio.post('/users/delete-account', data: {
-        'confirmEmail': confirmEmail,
-      });
+      await _dio.delete('/users/account');
     } on DioException catch (e) {
       throw ApiException.fromDio(e);
     }

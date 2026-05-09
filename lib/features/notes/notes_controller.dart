@@ -52,6 +52,8 @@ class NotesListController extends StateNotifier<NotesListState> {
       state = state.copyWith(notes: page.notes, loading: false);
     } on ApiException catch (e) {
       state = state.copyWith(loading: false, error: e.message);
+    } catch (e) {
+      state = state.copyWith(loading: false, error: 'Failed to load notes: $e');
     }
   }
 

@@ -51,6 +51,8 @@ class PatientsController extends StateNotifier<PatientsState> {
       state = state.copyWith(patients: list, loading: false);
     } on ApiException catch (e) {
       state = state.copyWith(loading: false, error: e.message);
+    } catch (e) {
+      state = state.copyWith(loading: false, error: 'Failed to load patients: $e');
     }
   }
 

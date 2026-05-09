@@ -63,7 +63,7 @@ class AudioApi {
     required String patientName,
   }) async {
     try {
-      final res = await _dio.post('/audio/treatment-plan', data: {
+      final res = await _dio.post('/audio/generate-treatment-plan', data: {
         'noteIds': noteIds,
         'patientName': patientName,
       });
@@ -87,7 +87,7 @@ class AudioApi {
     required String endDate,
   }) async {
     try {
-      final res = await _dio.post('/audio/report', data: {
+      final res = await _dio.post('/audio/generate-report', data: {
         'noteIds': noteIds,
         'diagnosis': diagnosis,
         'patientName': patientName,

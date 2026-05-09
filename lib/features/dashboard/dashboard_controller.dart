@@ -59,6 +59,8 @@ class DashboardController extends StateNotifier<DashboardData> {
       );
     } on ApiException catch (e) {
       state = state.copyWith(loading: false, error: e.message);
+    } catch (e) {
+      state = state.copyWith(loading: false, error: 'Failed to load dashboard: $e');
     }
   }
 }

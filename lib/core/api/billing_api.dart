@@ -47,9 +47,11 @@ class BillingApi {
     required CheckoutProvider provider,
   }) async {
     try {
-      final res = await _dio.post('/billing/checkout', data: {
-        'planId': planId,
+      final res = await _dio.post('/subscriptions/create-checkout', data: {
+        'plan': planId,
         'provider': provider.apiName,
+        'successUrl': 'pronote://checkout-success',
+        'cancelUrl': 'pronote://checkout-cancel',
       });
       return CheckoutSession.fromJson(res.data as Map<String, dynamic>);
     } on DioException catch (e) {
@@ -60,7 +62,7 @@ class BillingApi {
   /// Cancels the user's active subscription at the end of the current period.
   Future<void> cancel() async {
     try {
-      await _dio.post('/billing/cancel');
+      await _dio.post('/subscriptions/cancel');
     } on DioException catch (e) {
       throw ApiException.fromDio(e);
     }
@@ -70,7 +72,9 @@ class BillingApi {
   /// can update their card, change plan, download invoices, etc.
   Future<String> portalUrl() async {
     try {
-      final res = await _dio.post('/billing/portal');
+      final res = await _dio.post('/subscriptions/create-portal', data: {
+        'returnUrl': 'pronote://portal-return',
+      });
       final data = res.data as Map<String, dynamic>;
       return (data['url'] ?? data['portalUrl']) as String;
     } on DioException catch (e) {

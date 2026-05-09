@@ -294,9 +294,29 @@ class ClinicalNote {
   bool get isDraft => status == NoteStatus.draft;
 
   factory ClinicalNote.fromJson(Map<String, dynamic> json) {
+    // Backend has no 'title' column — construct one from template + patient
+    String title = json['title'] as String? ?? '';
+    if (title.isEmpty) {
+      final tmpl = json['template'] as String? ?? '';
+      final patient = json['patientName'] as String? ?? '';
+      if (tmpl.isNotEmpty && patient.isNotEmpty) {
+        title = '$tmpl — $patient';
+      } else if (tmpl.isNotEmpty) {
+        title = tmpl;
+      } else if (patient.isNotEmpty) {
+        title = 'Visit — $patient';
+      } else {
+        title = 'Untitled note';
+      }
+    }
+
+    // Duration may be in durationSeconds or processingTime (backend field name)
+    final durRaw = json['durationSeconds'] ?? json['processingTime'];
+    final duration = durRaw is num ? durRaw.toInt() : null;
+
     return ClinicalNote(
       id: (json['id'] ?? json['_id'] ?? '').toString(),
-      title: json['title'] as String? ?? 'Untitled note',
+      title: title,
       patientName: json['patientName'] as String?,
       specialty: json['specialty'] as String?,
       templateId: (json['template'] ?? json['templateId'])?.toString(),
@@ -304,9 +324,7 @@ class ClinicalNote {
       content: NoteContent.from(json['content']),
       transcript: (json['transcription'] ?? json['transcript']) as String?,
       status: NoteStatus.fromString(json['status'] as String?),
-      durationSeconds: (json['durationSeconds'] ?? json['processingTime']) is num
-          ? (json['durationSeconds'] ?? json['processingTime'] as num).toInt()
-          : null,
+      durationSeconds: duration,
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
       updatedAt: DateTime.tryParse(json['updatedAt'] as String? ?? '') ?? DateTime.now(),
       signedAt: json['signedAt'] != null

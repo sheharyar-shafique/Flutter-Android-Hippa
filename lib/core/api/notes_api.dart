@@ -22,11 +22,21 @@ class NotesPage {
         .cast<Map<String, dynamic>>()
         .map(ClinicalNote.fromJson)
         .toList();
+
+    // Backend nests pagination in { pagination: { page, limit, total, totalPages } }
+    final pag = json['pagination'] as Map<String, dynamic>?;
+
     return NotesPage(
       notes: list,
-      total: (json['total'] as num?)?.toInt() ?? list.length,
-      page: (json['page'] as num?)?.toInt() ?? 1,
-      pageSize: (json['pageSize'] as num?)?.toInt() ?? list.length,
+      total: (pag?['total'] as num?)?.toInt()
+          ?? (json['total'] as num?)?.toInt()
+          ?? list.length,
+      page: (pag?['page'] as num?)?.toInt()
+          ?? (json['page'] as num?)?.toInt()
+          ?? 1,
+      pageSize: (pag?['limit'] as num?)?.toInt()
+          ?? (json['pageSize'] as num?)?.toInt()
+          ?? list.length,
     );
   }
 }
