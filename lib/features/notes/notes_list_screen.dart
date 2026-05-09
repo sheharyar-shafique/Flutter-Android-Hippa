@@ -34,7 +34,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
         title: const Text('Notes'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/dashboard'),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/dashboard'),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -42,7 +42,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
         foregroundColor: Colors.white,
         icon: const Icon(Icons.mic),
         label: const Text('New visit', style: TextStyle(fontWeight: FontWeight.w700)),
-        onPressed: () => context.go('/capture'),
+        onPressed: () => context.push('/capture'),
       ),
       body: SafeArea(
         child: Column(
@@ -98,7 +98,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
         separatorBuilder: (_, __) => const SizedBox(height: 10),
         itemBuilder: (_, i) => _NoteCard(
           note: state.notes[i],
-          onTap: () => context.go('/notes/${state.notes[i].id}'),
+          onTap: () => context.push('/notes/${state.notes[i].id}'),
           onDelete: () => controller.delete(state.notes[i].id),
         ),
       ),

@@ -88,7 +88,7 @@ class DashboardScreen extends ConsumerWidget {
                           style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800)),
                     ),
                     TextButton(
-                      onPressed: () => context.go('/notes'),
+                      onPressed: () => context.push('/notes'),
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -202,7 +202,7 @@ class _WelcomeHeader extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
-              onTap: () => context.go('/capture'),
+              onTap: () => context.push('/capture'),
               child: const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 child: Row(
@@ -388,7 +388,7 @@ class _QuickActionsRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(16),
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
-                onTap: () => context.go(a.route),
+                onTap: () => context.push(a.route),
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
@@ -534,7 +534,7 @@ class _NoteRow extends StatelessWidget {
     final type = note.templateId ?? 'Note';
 
     return InkWell(
-      onTap: () => context.go('/notes/${note.id}'),
+      onTap: () => context.push('/notes/${note.id}'),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: const BoxDecoration(

@@ -96,7 +96,7 @@ class _CaptureScreenState extends ConsumerState<CaptureScreen> with SingleTicker
         title: const Text('Capture Conversation'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/dashboard'),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/dashboard'),
         ),
       ),
       body: SafeArea(

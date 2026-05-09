@@ -167,7 +167,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
     if (!mounted) return;
     setState(() => _saving = false);
     _toast('"$name" saved and added to My Templates!', AppColors.emerald500);
-    context.go('/templates');
+    if (context.canPop()) { context.pop(); } else { context.go('/templates'); }
   }
 
   void _toast(String msg, Color c) {
@@ -190,7 +190,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
                 alignment: Alignment.centerLeft,
                 child: TextButton.icon(
                   style: TextButton.styleFrom(foregroundColor: _violetLight, padding: const EdgeInsets.symmetric(horizontal: 8)),
-                  onPressed: () => context.go('/templates'),
+                  onPressed: () => context.canPop() ? context.pop() : context.go('/templates'),
                   icon: const Icon(Icons.arrow_back, size: 16),
                   label: const Text('Back to Templates', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                 ),
@@ -284,7 +284,7 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
                         child: SizedBox(
                           height: 48,
                           child: OutlinedButton(
-                            onPressed: () => context.go('/templates'),
+                            onPressed: () => context.canPop() ? context.pop() : context.go('/templates'),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.slate300,
                               side: const BorderSide(color: Color(0x33FFFFFF)),

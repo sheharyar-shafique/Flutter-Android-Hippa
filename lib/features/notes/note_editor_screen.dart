@@ -278,7 +278,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                   foregroundColor: AppColors.slate400,
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                 ),
-                onPressed: () => context.go('/notes'),
+                onPressed: () => context.canPop() ? context.pop() : context.go('/notes'),
                 icon: const Icon(Icons.arrow_back, size: 16),
                 label: const Text('Back to Notes', style: TextStyle(fontSize: 13)),
               ),
@@ -299,7 +299,7 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                       // Patient route uses :id in this app, but the web uses
                       // :patientName. We don't have the id here, so fall back
                       // to the patients list filtered by name search.
-                      context.go('/patients');
+                      context.push('/patients');
                       break;
                     case 'copy':
                       _copy();
@@ -965,7 +965,7 @@ class _ErrorShell extends StatelessWidget {
                     style: const TextStyle(color: Colors.white)),
                 const SizedBox(height: 16),
                 ElevatedButton.icon(
-                  onPressed: () => context.go('/notes'),
+                  onPressed: () => context.canPop() ? context.pop() : context.go('/notes'),
                   icon: const Icon(Icons.arrow_back, size: 16),
                   label: const Text('Back to Notes'),
                 ),

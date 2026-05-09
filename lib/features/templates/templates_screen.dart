@@ -90,7 +90,7 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
     if (widget.pickerMode) {
       Navigator.pop(context, t);
     } else {
-      context.go('/capture');
+      context.push('/capture');
     }
   }
 
@@ -115,7 +115,7 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
         title: Text(widget.pickerMode ? 'Pick a template' : 'Templates'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => widget.pickerMode ? Navigator.pop(context) : context.go('/dashboard'),
+          onPressed: () => widget.pickerMode ? Navigator.pop(context) : (context.canPop() ? context.pop() : context.go('/dashboard')),
         ),
       ),
       body: SafeArea(
@@ -128,7 +128,7 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
                       total: state.allTemplates.length,
                       onCreate: widget.pickerMode
                           ? null
-                          : () => context.go('/templates/new'),
+                          : () => context.push('/templates/new'),
                     ),
                   ),
                   SliverToBoxAdapter(
@@ -184,7 +184,7 @@ class _TemplatesScreenState extends ConsumerState<TemplatesScreen> {
                                   .toggleAdd(t),
                               onEdit: widget.pickerMode
                                   ? null
-                                  : () => context.go('/templates/${t.id}/edit'),
+                                  : () => context.push('/templates/${t.id}/edit'),
                               onShare: () => _share(t),
                               onDelete: t.isCustom ? () => _confirmDelete(t) : null,
                               onUse: () => _use(t),

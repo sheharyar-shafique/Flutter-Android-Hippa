@@ -185,7 +185,7 @@ class _PlansScreenState extends ConsumerState<PlansScreen> {
         title: const Text('Plans'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go(user == null ? '/' : '/dashboard'),
+          onPressed: () => context.canPop() ? context.pop() : context.go(user == null ? '/' : '/dashboard'),
         ),
       ),
       body: SafeArea(

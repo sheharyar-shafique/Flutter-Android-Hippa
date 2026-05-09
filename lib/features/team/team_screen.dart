@@ -19,7 +19,7 @@ class TeamScreen extends ConsumerWidget {
         title: const Text('Team'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/dashboard'),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/dashboard'),
         ),
       ),
       body: SafeArea(
@@ -126,7 +126,7 @@ class _UpgradePrompt extends StatelessWidget {
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
-              onPressed: () => context.go('/enterprise'),
+              onPressed: () => context.push('/enterprise'),
               icon: const Icon(Icons.upgrade),
               label: const Text('See Enterprise plan'),
             ),

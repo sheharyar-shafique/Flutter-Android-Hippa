@@ -142,7 +142,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
         title: const Text('Upload audio'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/dashboard'),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/dashboard'),
         ),
       ),
       body: SafeArea(

@@ -149,7 +149,7 @@ class _PatientsListScreenState extends ConsumerState<PatientsListScreen> {
         title: const Text('Patients'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/dashboard'),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/dashboard'),
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -253,7 +253,7 @@ class _PatientsListScreenState extends ConsumerState<PatientsListScreen> {
         separatorBuilder: (_, __) => const SizedBox(height: 10),
         itemBuilder: (_, i) => _PatientCard(
           patient: state.patients[i],
-          onTap: () => context.go('/patients/${state.patients[i].id}'),
+          onTap: () => context.push('/patients/${state.patients[i].id}'),
         ),
       ),
     );

@@ -21,7 +21,7 @@ class SettingsScreen extends ConsumerWidget {
         title: const Text('Settings'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/dashboard'),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/dashboard'),
         ),
       ),
       body: SafeArea(
@@ -38,7 +38,7 @@ class SettingsScreen extends ConsumerWidget {
                   ? '${user!.trialDaysLeft} day${user.trialDaysLeft == 1 ? '' : 's'} left in trial — tap to upgrade'
                   : 'View or change your plan',
               color: AppColors.warning,
-              onTap: () => context.go('/plans'),
+              onTap: () => context.push('/plans'),
             ),
 
             const SizedBox(height: 18),
@@ -53,19 +53,19 @@ class SettingsScreen extends ConsumerWidget {
               icon: Icons.privacy_tip_outlined,
               label: 'Privacy policy',
               color: AppColors.info,
-              onTap: () => context.go('/privacy'),
+              onTap: () => context.push('/privacy'),
             ),
             _SettingsTile(
               icon: Icons.description_outlined,
               label: 'Terms of service',
               color: AppColors.info,
-              onTap: () => context.go('/terms'),
+              onTap: () => context.push('/terms'),
             ),
             _SettingsTile(
               icon: Icons.shield_outlined,
               label: 'HIPAA Business Associate Agreement',
               color: AppColors.emerald400,
-              onTap: () => context.go('/hipaa-baa'),
+              onTap: () => context.push('/hipaa-baa'),
             ),
 
             const SizedBox(height: 18),

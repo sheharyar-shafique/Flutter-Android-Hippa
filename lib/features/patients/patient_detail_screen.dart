@@ -69,7 +69,7 @@ class _ErrorView extends StatelessWidget {
                 style: const TextStyle(color: Colors.white)),
             const SizedBox(height: 16),
             ElevatedButton.icon(
-              onPressed: () => context.go('/patients'),
+              onPressed: () => context.canPop() ? context.pop() : context.go('/patients'),
               icon: const Icon(Icons.arrow_back, size: 16),
               label: const Text('Back to patients'),
             ),
@@ -156,7 +156,7 @@ class _PatientViewState extends ConsumerState<_PatientView> {
               foregroundColor: AppColors.slate400,
               padding: const EdgeInsets.symmetric(horizontal: 8),
             ),
-            onPressed: () => context.go('/patients'),
+            onPressed: () => context.canPop() ? context.pop() : context.go('/patients'),
             icon: const Icon(Icons.arrow_back, size: 16),
             label: const Text('Back', style: TextStyle(fontSize: 13)),
           ),
@@ -169,7 +169,7 @@ class _PatientViewState extends ConsumerState<_PatientView> {
             noteCount: noteCount,
             isDirty: _profileDirty,
             onSave: _saveProfile,
-            onNewConversation: () => context.go('/capture'),
+            onNewConversation: () => context.push('/capture'),
           ),
 
           const SizedBox(height: 16),
@@ -209,7 +209,7 @@ class _PatientViewState extends ConsumerState<_PatientView> {
           profile: profile,
           notesAsync: notesAsync,
           onChanged: _onProfileChanged,
-          onNewConversation: () => context.go('/capture'),
+          onNewConversation: () => context.push('/capture'),
         );
       case 'notes':
         return _NotesTab(notesAsync: notesAsync);
@@ -740,7 +740,7 @@ class _NoteRow extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          onTap: () => context.go('/notes/${note.id}'),
+          onTap: () => context.push('/notes/${note.id}'),
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
