@@ -81,4 +81,12 @@ class PatientsController extends StateNotifier<PatientsState> {
       return false;
     }
   }
+
+  Future<void> delete(String id) async {
+    // Patients are derived from notes — remove from local state.
+    // A full delete would require deleting all notes for this patient.
+    state = state.copyWith(
+      patients: state.patients.where((p) => p.id != id).toList(),
+    );
+  }
 }

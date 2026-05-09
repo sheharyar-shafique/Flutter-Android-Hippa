@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'api_client.dart';
 
@@ -54,33 +55,57 @@ class Team {
 }
 
 class TeamApi {
-  final ApiClient _client;
-  TeamApi(this._client);
+  final Dio _dio;
+  TeamApi(this._dio);
 
   Future<Team?> getTeam() async {
-    final res = await _client.get('/teams');
-    if (res == null) return null;
-    return Team.fromJson(res as Map<String, dynamic>);
+    try {
+      final res = await _dio.get('/teams');
+      if (res.data == null) return null;
+      return Team.fromJson(res.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
   }
 
   Future<Team> createTeam(String name) async {
-    final res = await _client.post('/teams', body: {'name': name});
-    return Team.fromJson(res as Map<String, dynamic>);
+    try {
+      final res = await _dio.post('/teams', data: {'name': name});
+      return Team.fromJson(res.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
   }
 
   Future<void> renameTeam(String teamId, String name) async {
-    await _client.put('/teams/$teamId', body: {'name': name});
+    try {
+      await _dio.put('/teams/$teamId', data: {'name': name});
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
   }
 
   Future<void> inviteMember(String teamId, String email) async {
-    await _client.post('/teams/$teamId/invite', body: {'email': email});
+    try {
+      await _dio.post('/teams/$teamId/invite', data: {'email': email});
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
   }
 
   Future<void> removeMember(String teamId, String memberId) async {
-    await _client.delete('/teams/$teamId/members/$memberId');
+    try {
+      await _dio.delete('/teams/$teamId/members/$memberId');
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
   }
 
   Future<void> disbandTeam(String teamId) async {
-    await _client.delete('/teams/$teamId');
+    try {
+      await _dio.delete('/teams/$teamId');
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
   }
 }
