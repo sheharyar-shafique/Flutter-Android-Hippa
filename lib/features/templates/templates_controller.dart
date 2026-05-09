@@ -43,8 +43,8 @@ class TemplatesState {
     return all.where((t) => addedIds.contains(t.id)).toList();
   }
 
-  /// Just the built-ins. Used by the "All Templates" tab.
-  List<NoteTemplate> get allTemplates => kDefaultTemplates;
+  /// Built-ins + customs. Used by the "All Templates" tab.
+  List<NoteTemplate> get allTemplates => [...kDefaultTemplates, ...customTemplates];
 
   bool isAdded(String id) => addedIds.contains(id);
   bool isSelected(String id) => selectedTemplateId == id;

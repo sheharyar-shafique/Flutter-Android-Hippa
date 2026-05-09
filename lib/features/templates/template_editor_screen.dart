@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/models/template.dart';
 import '../../core/theme/app_theme.dart';
 import 'templates_controller.dart';
 
@@ -137,7 +138,8 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
   }
 
   Future<void> _save() async {
-    if (_nameCtrl.text.trim().isEmpty) {
+    final name = _nameCtrl.text.trim();
+    if (name.isEmpty) {
       _toast('Template name is required', AppColors.danger);
       return;
     }
@@ -146,10 +148,25 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
       return;
     }
     setState(() => _saving = true);
-    await Future.delayed(const Duration(milliseconds: 600));
+
+    // Build a real NoteTemplate and persist via controller
+    final template = NoteTemplate(
+      id: 'custom-${DateTime.now().millisecondsSinceEpoch}',
+      name: name,
+      description: _isEdit
+          ? 'Custom version based on ${_originalName ?? 'a template'}'
+          : 'Custom template',
+      specialty: 'Custom',
+      sections: _sections.map((s) => s.title).toList(),
+      isCustom: true,
+      updatedAt: DateTime.now(),
+    );
+
+    await ref.read(templatesControllerProvider.notifier).upsertCustom(template);
+
     if (!mounted) return;
     setState(() => _saving = false);
-    _toast('"${_nameCtrl.text.trim()}" saved and added to My Templates!', AppColors.emerald500);
+    _toast('"$name" saved and added to My Templates!', AppColors.emerald500);
     context.go('/templates');
   }
 
