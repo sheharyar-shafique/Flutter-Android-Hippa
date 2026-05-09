@@ -18,7 +18,7 @@ val keyProps = Properties().apply {
 }
 
 android {
-    namespace = "com.pronoteai.scribe"
+    namespace = "com.pronoteai.medical"
     // Several Flutter plugins (speech_to_text, record_android,
     // shared_preferences_android, url_launcher_android,
     // flutter_plugin_android_lifecycle) compile against SDK 36.
@@ -37,7 +37,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.pronoteai.scribe"
+        applicationId = "com.pronoteai.medical"
         minSdk = 24
         targetSdk = 35
         versionCode = flutter.versionCode

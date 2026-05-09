@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/api/templates_api.dart';
 import '../../core/data/default_templates.dart';
 import '../../core/models/template.dart';
 
@@ -67,19 +68,67 @@ class TemplatesState {
 
 final templatesControllerProvider =
     StateNotifierProvider<TemplatesController, TemplatesState>((ref) {
-  return TemplatesController();
+  final api = ref.watch(templatesApiProvider);
+  return TemplatesController(api);
 });
 
 class TemplatesController extends StateNotifier<TemplatesState> {
-  TemplatesController() : super(const TemplatesState()) {
+  final TemplatesApi _api;
+
+  TemplatesController(this._api) : super(const TemplatesState()) {
     _bootstrap();
   }
 
-  /// Loads from shared_preferences. On first launch (no key yet), seeds
-  /// addedIds with every default template ID — matching the web's
-  /// "every new account starts with the full library" behaviour.
+  /// Loads from server first (authoritative), falls back to local storage.
+  /// Matches TemplatesPage.tsx: useEffect → templatesApi.getPreferences()
   Future<void> _bootstrap() async {
     final prefs = await SharedPreferences.getInstance();
+
+    // Try server first (cross-device sync)
+    try {
+      final serverPrefs = await _api.getPreferences();
+      if (serverPrefs != null) {
+        // Server has data → authoritative, use it
+        final serverIds = (serverPrefs['addedIds'] as List?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            [];
+        final serverCustomRaw = serverPrefs['customTemplates'] as List? ?? [];
+        final serverCustom = serverCustomRaw
+            .map((e) => NoteTemplate.fromJson(e as Map<String, dynamic>))
+            .toList();
+
+        // Cache to local storage
+        await prefs.setString(_kAddedIdsKey, jsonEncode(serverIds));
+        await prefs.setString(
+          _kCustomTemplatesKey,
+          jsonEncode(serverCustom.map((t) => t.toJson()).toList()),
+        );
+
+        state = state.copyWith(
+          addedIds: serverIds,
+          customTemplates: serverCustom,
+          initialising: false,
+        );
+        return;
+      } else {
+        // No server data yet (new user) → seed with all defaults
+        final defaultIds = kDefaultTemplates.map((t) => t.id).toList();
+        state = state.copyWith(
+          addedIds: defaultIds,
+          customTemplates: const [],
+          initialising: false,
+        );
+        // Bootstrap server so other devices stay in sync
+        _api.savePreferences(defaultIds, []).catchError((_) {});
+        await prefs.setString(_kAddedIdsKey, jsonEncode(defaultIds));
+        return;
+      }
+    } catch (_) {
+      // Server unavailable → fall back to local storage
+    }
+
+    // Fallback: load from SharedPreferences
     final rawIds = prefs.getString(_kAddedIdsKey);
     final rawCustom = prefs.getString(_kCustomTemplatesKey);
 
@@ -118,6 +167,8 @@ class TemplatesController extends StateNotifier<TemplatesState> {
     );
   }
 
+  /// Persist to both localStorage (fast) and server (cross-device).
+  /// Mirrors web's persistPreferences() function.
   Future<void> _persist() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kAddedIdsKey, jsonEncode(state.addedIds));
@@ -125,6 +176,13 @@ class TemplatesController extends StateNotifier<TemplatesState> {
       _kCustomTemplatesKey,
       jsonEncode(state.customTemplates.map((t) => t.toJson()).toList()),
     );
+    // Sync to server (fire and forget)
+    _api
+        .savePreferences(
+          state.addedIds,
+          state.customTemplates.map((t) => t.toJson()).toList(),
+        )
+        .catchError((_) {});
   }
 
   /// Add a template to "My Templates". Idempotent.
