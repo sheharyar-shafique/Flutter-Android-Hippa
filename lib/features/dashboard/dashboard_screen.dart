@@ -518,6 +518,10 @@ class _NoteRow extends StatelessWidget {
         return const Color(0xFF60A5FA);
       case NoteStatus.processing:
         return const Color(0xFFA78BFA);
+      case NoteStatus.ready:
+        return const Color(0xFF34D399);
+      default:
+        return AppColors.slate400;
     }
   }
 
