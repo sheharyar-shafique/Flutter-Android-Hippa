@@ -5,12 +5,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/api/notes_api.dart';
 import '../../core/data/default_templates.dart';
 import '../../core/models/note.dart';
 import '../../core/theme/app_theme.dart';
+import '../patients/patients_controller.dart';
 import '../templates/templates_controller.dart';
 import 'notes_controller.dart';
 import 'section_map.dart';
@@ -167,6 +171,42 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
     _toast('Note copied to clipboard', AppColors.emerald500);
   }
 
+  Future<void> _exportPdf(ClinicalNote note) async {
+    try {
+      final pdf = pw.Document();
+      final sections = _resolveSections();
+      final templateName = _resolveTemplateName();
+      final dateStr = DateFormat('MMM d, y').format(note.updatedAt);
+
+      pdf.addPage(pw.MultiPage(
+        pageFormat: PdfPageFormat.letter,
+        margin: const pw.EdgeInsets.all(40),
+        build: (ctx) => [
+          pw.Header(level: 0, child: pw.Text('Clinical Note', style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold))),
+          pw.SizedBox(height: 4),
+          pw.Row(mainAxisAlignment: pw.MainAxisAlignment.spaceBetween, children: [
+            pw.Text('Patient: ${note.patientName ?? "N/A"}', style: const pw.TextStyle(fontSize: 12)),
+            pw.Text('Date: $dateStr', style: const pw.TextStyle(fontSize: 12)),
+          ]),
+          pw.Text('Template: $templateName', style: const pw.TextStyle(fontSize: 12)),
+          pw.Text('Status: ${note.status.name.toUpperCase()}', style: const pw.TextStyle(fontSize: 12)),
+          pw.Divider(),
+          pw.SizedBox(height: 8),
+          for (final section in sections) ...[
+            pw.Header(level: 1, child: pw.Text(section.toUpperCase(), style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold))),
+            pw.Text(_content.getField(sectionKeyFor(section)).isEmpty ? '(empty)' : _content.getField(sectionKeyFor(section)),
+                style: const pw.TextStyle(fontSize: 11, lineSpacing: 4)),
+            pw.SizedBox(height: 10),
+          ],
+        ],
+      ));
+
+      await Printing.sharePdf(bytes: await pdf.save(), filename: '${note.title.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}.pdf');
+    } catch (e) {
+      _toast('PDF export failed: $e', AppColors.danger);
+    }
+  }
+
   void _toast(String msg, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -296,19 +336,24 @@ class _NoteEditorScreenState extends ConsumerState<NoteEditorScreen> {
                 onMenu: (action) async {
                   switch (action) {
                     case 'patient':
-                      // Patient route uses :id in this app, but the web uses
-                      // :patientName. We don't have the id here, so fall back
-                      // to the patients list filtered by name search.
-                      context.push('/patients');
+                      final pName = note.patientName;
+                      if (pName == null || pName.isEmpty) {
+                        _toast('No patient linked to this note', AppColors.warning);
+                        break;
+                      }
+                      final patients = ref.read(patientsControllerProvider).patients;
+                      final match = patients.where((p) => p.name.toLowerCase() == pName.toLowerCase()).firstOrNull;
+                      if (match != null) {
+                        context.push('/patients/${match.id}');
+                      } else {
+                        context.push('/patients');
+                      }
                       break;
                     case 'copy':
                       _copy();
                       break;
                     case 'export':
-                      _toast(
-                        'Export coming soon — the backend /notes/:id/export endpoint is wired on web only.',
-                        AppColors.warning,
-                      );
+                      await _exportPdf(note);
                       break;
                     case 'sign':
                       await _sign();
