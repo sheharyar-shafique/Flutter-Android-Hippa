@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/api/audio_api.dart';
+import '../../core/api/notes_api.dart';
 import '../../core/theme/app_theme.dart';
 
 class UploadScreen extends ConsumerStatefulWidget {
@@ -21,6 +22,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
   bool _uploading = false;
   double _progress = 0;
   String? _error;
+  String _statusMsg = '';
 
   @override
   void dispose() {
@@ -57,26 +59,61 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
       _uploading = true;
       _progress = 0;
       _error = null;
+      _statusMsg = 'Uploading audio…';
     });
 
     try {
-      final note = await ref.read(audioApiProvider).upload(
-            filePath: f.path!,
-            filename: f.name,
-            title: _titleCtrl.text.trim().isEmpty ? f.name : _titleCtrl.text.trim(),
-            patientName: _patientCtrl.text.trim().isEmpty ? null : _patientCtrl.text.trim(),
-            onProgress: (sent, total) {
-              if (total > 0) {
-                setState(() => _progress = sent / total);
-              }
-            },
-          );
+      final audioApi = ref.read(audioApiProvider);
+      final notesApi = ref.read(notesApiProvider);
+
+      // Step 1: Upload
+      final uploadResult = await audioApi.upload(
+        filePath: f.path!,
+        filename: f.name,
+        onProgress: (sent, total) {
+          if (total > 0) {
+            setState(() => _progress = sent / total);
+          }
+        },
+      );
+
+      // Step 2: Transcribe
+      setState(() => _statusMsg = 'Transcribing audio…');
+      final transcription = await audioApi.transcribe(uploadResult.id);
+      final transcriptText = transcription.transcription.trim();
+
+      if (transcriptText.isEmpty) {
+        setState(() {
+          _error = 'No speech detected in the audio file.';
+          _uploading = false;
+        });
+        return;
+      }
+
+      // Step 3: Generate note
+      setState(() => _statusMsg = 'Generating clinical note with AI…');
+      final noteResult = await audioApi.generateNote(
+        transcription: transcriptText,
+        template: 'soap',
+        patientName: _patientCtrl.text.trim().isEmpty ? null : _patientCtrl.text.trim(),
+      );
+
+      // Step 4: Create note in DB
+      setState(() => _statusMsg = 'Saving note…');
+      final createdNote = await notesApi.create(
+        patientName: _patientCtrl.text.trim().isEmpty ? 'Unknown Patient' : _patientCtrl.text.trim(),
+        dateOfService: DateTime.now().toIso8601String().split('T')[0],
+        template: 'soap',
+        content: noteResult.content,
+        transcription: transcriptText,
+      );
+
       setState(() {
         _uploading = false;
         _progress = 1;
       });
       if (!mounted) return;
-      context.go('/notes/${note.id}');
+      context.go('/notes/${createdNote.id}');
     } on ApiException catch (e) {
       setState(() {
         _error = e.message;
@@ -84,7 +121,7 @@ class _UploadScreenState extends ConsumerState<UploadScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = 'Upload failed: $e';
+        _error = 'Processing failed: $e';
         _uploading = false;
       });
     }

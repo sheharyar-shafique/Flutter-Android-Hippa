@@ -41,6 +41,9 @@ class RecordingState {
   /// Template id selected for this session ("soap", "psychiatry", etc.).
   final String selectedTemplateId;
 
+  /// Status message shown during multi-step processing.
+  final String processingMessage;
+
   const RecordingState({
     this.phase = RecordingPhase.idle,
     this.elapsed = Duration.zero,
@@ -52,6 +55,7 @@ class RecordingState {
     this.patientName = '',
     this.patientPronoun = '',
     this.selectedTemplateId = 'soap',
+    this.processingMessage = '',
   });
 
   bool get isActive => phase == RecordingPhase.recording || phase == RecordingPhase.paused;
@@ -77,6 +81,7 @@ class RecordingState {
     String? patientName,
     String? patientPronoun,
     String? selectedTemplateId,
+    String? processingMessage,
     bool clearError = false,
     bool clearNote = false,
   }) {
@@ -91,6 +96,7 @@ class RecordingState {
       patientName: patientName ?? this.patientName,
       patientPronoun: patientPronoun ?? this.patientPronoun,
       selectedTemplateId: selectedTemplateId ?? this.selectedTemplateId,
+      processingMessage: processingMessage ?? this.processingMessage,
     );
   }
 }
@@ -105,7 +111,6 @@ final recordingControllerProvider =
 class RecordingController extends StateNotifier<RecordingState> {
   RecordingController({required AudioApi api, required NotesApi notes})
       : _api = api,
-        // ignore: unused_field
         _notes = notes,
         super(const RecordingState());
 
@@ -162,6 +167,7 @@ class RecordingController extends StateNotifier<RecordingState> {
       clearError: true,
       clearNote: true,
       warnApproachingLimit: false,
+      processingMessage: '',
     );
     _warned = false;
     _accumulated = Duration.zero;
@@ -271,6 +277,11 @@ class RecordingController extends StateNotifier<RecordingState> {
     return true;
   }
 
+  /// Full 4-step pipeline matching the web:
+  /// 1. Upload audio file
+  /// 2. Transcribe audio
+  /// 3. Generate clinical note with AI
+  /// 4. Create note in the database
   Future<void> _uploadAndCreateNote() async {
     final path = state.recordedFilePath;
     if (path == null) {
@@ -281,28 +292,78 @@ class RecordingController extends StateNotifier<RecordingState> {
       return;
     }
 
-    state = state.copyWith(phase: RecordingPhase.uploading, uploadProgress: 0);
+    final recordingDuration = state.elapsed.inSeconds;
+
     try {
-      final note = await _api.upload(
+      // ── Step 1: Upload audio ──
+      state = state.copyWith(
+        phase: RecordingPhase.uploading,
+        uploadProgress: 0,
+        processingMessage: 'Uploading audio…',
+      );
+
+      final uploadResult = await _api.upload(
         filePath: path,
         filename: path.split(Platform.pathSeparator).last,
-        title: 'Visit with ${state.patientName}',
-        patientName: state.patientName.isEmpty ? null : state.patientName,
-        templateId: state.selectedTemplateId,
         onProgress: (sent, total) {
           if (total <= 0) return;
           state = state.copyWith(uploadProgress: sent / total);
         },
       );
+
+      // ── Step 2: Transcribe ──
+      state = state.copyWith(
+        phase: RecordingPhase.finalising,
+        processingMessage: 'Transcribing audio…',
+        uploadProgress: 1,
+      );
+
+      final transcription = await _api.transcribe(uploadResult.id);
+      final transcriptText = transcription.transcription.trim();
+
+      if (transcriptText.isEmpty) {
+        state = state.copyWith(
+          phase: RecordingPhase.error,
+          error: 'No speech detected. Please speak clearly during the visit.',
+        );
+        return;
+      }
+
+      // ── Step 3: Generate note content with AI ──
+      state = state.copyWith(
+        processingMessage: 'Generating clinical note with AI…',
+      );
+
+      final noteResult = await _api.generateNote(
+        transcription: transcriptText,
+        template: state.selectedTemplateId,
+        patientName: state.patientName.isEmpty ? null : state.patientName,
+      );
+
+      // ── Step 4: Create note in database ──
+      state = state.copyWith(
+        processingMessage: 'Saving note…',
+      );
+
+      final createdNote = await _notes.create(
+        patientName: state.patientName.isEmpty ? 'Unknown Patient' : state.patientName,
+        dateOfService: DateTime.now().toIso8601String().split('T')[0],
+        template: state.selectedTemplateId,
+        content: noteResult.content,
+        transcription: transcriptText,
+        processingTime: recordingDuration,
+      );
+
       state = state.copyWith(
         phase: RecordingPhase.done,
-        createdNote: note,
+        createdNote: createdNote,
         uploadProgress: 1,
+        processingMessage: 'Note generated successfully!',
       );
     } on ApiException catch (e) {
       state = state.copyWith(phase: RecordingPhase.error, error: e.message);
     } catch (e) {
-      state = state.copyWith(phase: RecordingPhase.error, error: 'Upload failed: $e');
+      state = state.copyWith(phase: RecordingPhase.error, error: 'Processing failed: $e');
     }
   }
 

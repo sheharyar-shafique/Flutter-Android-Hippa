@@ -97,23 +97,27 @@ class NotesApi {
   }
 
   Future<ClinicalNote> create({
-    required String title,
-    String? patientName,
-    String? templateId,
-    String? content,
-    String? transcript,
-    int? durationSeconds,
+    required String patientName,
+    required String dateOfService,
+    required String template,
+    required Map<String, dynamic> content,
+    String? transcription,
+    int? processingTime,
   }) async {
     try {
       final res = await _dio.post('/notes', data: {
-        'title': title,
-        if (patientName != null) 'patientName': patientName,
-        if (templateId != null) 'templateId': templateId,
-        if (content != null) 'content': content,
-        if (transcript != null) 'transcript': transcript,
-        if (durationSeconds != null) 'durationSeconds': durationSeconds,
+        'patientName': patientName,
+        'dateOfService': dateOfService,
+        'template': template,
+        'content': content,
+        if (transcription != null) 'transcription': transcription,
+        if (processingTime != null) 'processingTime': processingTime,
       });
-      return ClinicalNote.fromJson(res.data as Map<String, dynamic>);
+      final data = res.data;
+      if (data is Map<String, dynamic> && data.containsKey('note')) {
+        return ClinicalNote.fromJson(data['note'] as Map<String, dynamic>);
+      }
+      return ClinicalNote.fromJson(data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw ApiException.fromDio(e);
     }

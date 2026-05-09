@@ -506,6 +506,11 @@ class _TimerDisplay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isProcessing) {
+      final msg = state.processingMessage.isNotEmpty
+          ? state.processingMessage
+          : (state.phase == RecordingPhase.uploading
+              ? 'Uploading audio… ${(state.uploadProgress * 100).clamp(0, 100).toStringAsFixed(0)}%'
+              : 'Processing your recording…');
       return Column(
         children: [
           const SizedBox(
@@ -515,14 +520,12 @@ class _TimerDisplay extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            state.phase == RecordingPhase.uploading
-                ? 'Uploading audio… ${(state.uploadProgress * 100).clamp(0, 100).toStringAsFixed(0)}%'
-                : 'Processing your recording…',
+            msg,
             style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 4),
           const Text(
-            'Generating clinical notes with AI',
+            'This may take 30–60 seconds',
             style: TextStyle(color: AppColors.slate400, fontSize: 12),
           ),
         ],

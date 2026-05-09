@@ -1,34 +1,69 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/note.dart';
 import 'api_client.dart';
 
 final audioApiProvider = Provider<AudioApi>((ref) {
   return AudioApi(ref.watch(apiClientProvider));
 });
 
+/// Response from /audio/upload — just the audio file record, NOT a note.
+class AudioUploadResult {
+  final String id;
+  final String fileName;
+  AudioUploadResult({required this.id, required this.fileName});
+
+  factory AudioUploadResult.fromJson(Map<String, dynamic> json) {
+    return AudioUploadResult(
+      id: json['id']?.toString() ?? '',
+      fileName: (json['fileName'] ?? json['file_name'] ?? '') as String,
+    );
+  }
+}
+
+/// Response from /audio/transcribe
+class TranscriptionResult {
+  final String audioFileId;
+  final String transcription;
+  TranscriptionResult({required this.audioFileId, required this.transcription});
+
+  factory TranscriptionResult.fromJson(Map<String, dynamic> json) {
+    return TranscriptionResult(
+      audioFileId: json['audioFileId']?.toString() ?? '',
+      transcription: (json['transcription'] ?? '') as String,
+    );
+  }
+}
+
+/// Response from /audio/generate-note
+class GenerateNoteResult {
+  final Map<String, dynamic> content;
+  final String template;
+  final String source; // 'ai' or 'mock'
+  GenerateNoteResult({required this.content, required this.template, required this.source});
+
+  factory GenerateNoteResult.fromJson(Map<String, dynamic> json) {
+    return GenerateNoteResult(
+      content: (json['content'] as Map<String, dynamic>?) ?? {},
+      template: (json['template'] ?? '') as String,
+      source: (json['source'] ?? 'ai') as String,
+    );
+  }
+}
+
 class AudioApi {
   final Dio _dio;
   AudioApi(this._dio);
 
-  /// Uploads a recorded/local audio file and kicks off transcription +
-  /// note generation. Returns the freshly-created note (in `processing`
-  /// state at first — poll `/notes/:id` until status flips to `ready`).
-  Future<ClinicalNote> upload({
+  /// Step 1: Upload audio file → returns audio file ID (NOT a note).
+  Future<AudioUploadResult> upload({
     required String filePath,
     required String filename,
-    String? patientName,
-    String? templateId,
-    String? title,
     void Function(int sent, int total)? onProgress,
   }) async {
     try {
       final form = FormData.fromMap({
         'audio': await MultipartFile.fromFile(filePath, filename: filename),
-        if (patientName != null) 'patientName': patientName,
-        if (templateId != null) 'templateId': templateId,
-        if (title != null) 'title': title,
       });
 
       final res = await _dio.post(
@@ -36,28 +71,58 @@ class AudioApi {
         data: form,
         onSendProgress: onProgress,
         options: Options(
-          // Long uploads — let the server drive the timeout.
           sendTimeout: const Duration(minutes: 10),
           receiveTimeout: const Duration(minutes: 5),
         ),
       );
 
-      final data = res.data;
-      if (data is Map<String, dynamic>) {
-        if (data['note'] is Map<String, dynamic>) {
-          return ClinicalNote.fromJson(data['note'] as Map<String, dynamic>);
-        }
-        return ClinicalNote.fromJson(data);
-      }
-      throw ApiException('Unexpected upload response shape.');
+      return AudioUploadResult.fromJson(res.data as Map<String, dynamic>);
     } on DioException catch (e) {
       throw ApiException.fromDio(e);
     }
   }
 
-  /// Asks the backend to summarise the patient's selected notes into a
-  /// structured treatment plan (called from the Treatment Plan tab on the
-  /// patient page). Mirrors `audioApi.generateTreatmentPlan` from the web.
+  /// Step 2: Transcribe uploaded audio → returns transcription text.
+  Future<TranscriptionResult> transcribe(String audioFileId) async {
+    try {
+      final res = await _dio.post(
+        '/audio/transcribe',
+        data: {'audioFileId': audioFileId},
+        options: Options(
+          receiveTimeout: const Duration(minutes: 5),
+        ),
+      );
+      return TranscriptionResult.fromJson(res.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
+  /// Step 3: Generate clinical note content from transcription.
+  Future<GenerateNoteResult> generateNote({
+    required String transcription,
+    required String template,
+    String? patientName,
+  }) async {
+    try {
+      final res = await _dio.post(
+        '/audio/generate-note',
+        data: {
+          'transcription': transcription,
+          'template': template,
+          if (patientName != null) 'patientName': patientName,
+        },
+        options: Options(
+          receiveTimeout: const Duration(minutes: 5),
+        ),
+      );
+      return GenerateNoteResult.fromJson(res.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
+  /// Generate treatment plan from multiple notes.
   Future<String> generateTreatmentPlan({
     required List<String> noteIds,
     required String patientName,
@@ -77,8 +142,7 @@ class AudioApi {
     }
   }
 
-  /// Asks the backend to write a clinical report covering one diagnosis
-  /// across a date range. Mirrors `audioApi.generateReport` from the web.
+  /// Generate a clinical report.
   Future<String> generateReport({
     required List<String> noteIds,
     required String diagnosis,
