@@ -109,7 +109,14 @@ class NotesApi {
     }
   }
 
-  Future<ClinicalNote> update(String id, {String? title, String? content, String? patientName}) async {
+  /// Update the note. `content` accepts a structured `Map` (modern note shape
+  /// matching the web's NoteContent JSON) or null to leave unchanged.
+  Future<ClinicalNote> update(
+    String id, {
+    String? title,
+    Map<String, dynamic>? content,
+    String? patientName,
+  }) async {
     try {
       final res = await _dio.put('/notes/$id', data: {
         if (title != null) 'title': title,

@@ -122,6 +122,7 @@ class _NoteCard extends StatelessWidget {
       case NoteStatus.failed:
         return AppColors.danger;
       case NoteStatus.ready:
+      case NoteStatus.completed:
         return AppColors.info;
       case NoteStatus.draft:
         return AppColors.slate400;

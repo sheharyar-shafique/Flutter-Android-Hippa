@@ -639,13 +639,23 @@ class _OverviewTabState extends State<_OverviewTab> {
   List<String> _buildSummary(ClinicalNote n) {
     final lines = <String>[];
     final c = n.content;
-    if (c.isNotEmpty) {
-      // Treat the entire note content as a fallback summary by splitting on
-      // common section markers. Backend on the web returns structured JSON;
-      // until our notes API on the app exposes the same, we just clip the
-      // first 180 chars of the body for the bullet.
-      final t = c.length > 180 ? '${c.substring(0, 180)}…' : c;
-      lines.add(t);
+    String _clip(String s) => s.length > 180 ? '${s.substring(0, 180)}…' : s;
+
+    if ((c.subjective ?? '').isNotEmpty) lines.add(_clip(c.subjective!.trim()));
+    if ((c.objective ?? '').isNotEmpty) lines.add(_clip(c.objective!.trim()));
+    if ((c.assessment ?? '').isNotEmpty) {
+      final patient = n.patientName ?? 'The patient';
+      lines.add('$patient was assessed: ${_clip(c.assessment!.trim())}');
+    }
+    if ((c.instructions ?? '').isNotEmpty) {
+      final patient = n.patientName ?? 'The patient';
+      lines.add('$patient was instructed to ${_clip(c.instructions!.trim())}');
+    } else if ((c.plan ?? '').isNotEmpty) {
+      lines.add('Plan: ${_clip(c.plan!.trim())}');
+    }
+    // Legacy / unstructured content fallback.
+    if (lines.isEmpty && c.legacyText.isNotEmpty) {
+      lines.add(_clip(c.legacyText));
     }
     if (lines.isEmpty) {
       lines.add('No summary content available from the last note.');
