@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
@@ -68,9 +69,52 @@ class _PronoteAppState extends ConsumerState<PronoteApp> with WidgetsBindingObse
       builder: (context, child) {
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
-          child: child ?? const SizedBox.shrink(),
+          child: _SystemBackHandler(router: router, child: child ?? const SizedBox.shrink()),
         );
       },
+    );
+  }
+}
+
+/// Intercepts the Android system back button / swipe-back gesture.
+///
+/// Without this, GoRouter's flat route table means the system back button
+/// exits the app immediately from any screen. This widget catches the back
+/// event and either:
+///   1. Pops the current route if there's a navigation stack to pop, OR
+///   2. Navigates to /dashboard if the user is on a top-level page, OR
+///   3. Only exits the app from / (landing) or /dashboard.
+class _SystemBackHandler extends StatelessWidget {
+  final GoRouter router;
+  final Widget child;
+  const _SystemBackHandler({required this.router, required this.child});
+
+  static const _exitRoutes = {'/', '/dashboard', '/login', '/splash'};
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) return;
+
+        // If GoRouter has stack to pop, pop it.
+        if (router.canPop()) {
+          router.pop();
+          return;
+        }
+
+        // On exit routes, allow the app to close.
+        final currentPath = router.routeInformationProvider.value.uri.path;
+        if (_exitRoutes.contains(currentPath)) {
+          SystemNavigator.pop();
+          return;
+        }
+
+        // Otherwise, go back to dashboard.
+        router.go('/dashboard');
+      },
+      child: child,
     );
   }
 }
