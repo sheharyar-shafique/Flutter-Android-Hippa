@@ -101,22 +101,25 @@ class _LandingScreenState extends State<LandingScreen> {
                     child: const Text('Sign in'),
                   ),
                   const SizedBox(width: 4),
-                  // Hamburger menu
-                  Material(
-                    color: Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
-                    child: InkWell(
-                      onTap: () => Scaffold.of(context).openEndDrawer(),
+                  // Hamburger menu — Builder provides a context below the
+                  // Scaffold so openEndDrawer() works.
+                  Builder(
+                    builder: (scaffoldCtx) => Material(
+                      color: Colors.transparent,
                       borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: const Color(0x14FFFFFF),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0x1AFFFFFF)),
+                      child: InkWell(
+                        onTap: () => Scaffold.of(scaffoldCtx).openEndDrawer(),
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: const Color(0x14FFFFFF),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0x1AFFFFFF)),
+                          ),
+                          child: const Icon(Icons.menu_rounded, color: Colors.white, size: 20),
                         ),
-                        child: const Icon(Icons.menu_rounded, color: Colors.white, size: 20),
                       ),
                     ),
                   ),
