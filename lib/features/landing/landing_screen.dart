@@ -1,5 +1,3 @@
-import 'dart:ui' show ImageFilter;
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -18,6 +16,7 @@ class LandingScreen extends StatefulWidget {
 
 class _LandingScreenState extends State<LandingScreen> {
   int _openFaq = -1;
+  final _scrollCtrl = ScrollController();
 
   // Section anchors used by the in-page nav links (Features, How It Works,
   // Pricing, Security, About). Each chip in the nav bar calls
@@ -41,119 +40,112 @@ class _LandingScreenState extends State<LandingScreen> {
   }
 
   @override
+  void dispose() {
+    _scrollCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgDeep,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(96),
-        child: ClipRect(
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-            child: Container(
+      // ── Premium slide-out menu ──
+      endDrawer: _LandingDrawer(
+        onNavigate: (key) {
+          Navigator.pop(context); // close drawer
+          _jumpTo(key);
+        },
+        featuresKey: _featuresKey,
+        howItWorksKey: _howItWorksKey,
+        pricingKey: _pricingKey,
+        securityKey: _securityKey,
+        aboutKey: _aboutKey,
+      ),
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            // ── Clean minimal app bar ──
+            Container(
+              height: 56,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: AppColors.slate900.withValues(alpha: 0.85),
+                color: AppColors.slate900.withValues(alpha: 0.92),
                 border: Border(
                   bottom: BorderSide(color: AppColors.cardBorder, width: 1),
                 ),
               ),
-              child: SafeArea(
-                bottom: false,
+              child: Row(
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      gradient: kEmeraldGradient,
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                    child: const Icon(Icons.auto_awesome, size: 17, color: Colors.white),
+                  ),
+                  const SizedBox(width: 10),
+                  const Text('Pronote',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 17)),
+                  const Spacer(),
+                  // Sign in — minimal text
+                  TextButton(
+                    onPressed: () => context.go('/login'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.slate300,
+                      textStyle: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                    ),
+                    child: const Text('Sign in'),
+                  ),
+                  const SizedBox(width: 4),
+                  // Hamburger menu
+                  Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                    child: InkWell(
+                      onTap: () => Scaffold.of(context).openEndDrawer(),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: const Color(0x14FFFFFF),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0x1AFFFFFF)),
+                        ),
+                        child: const Icon(Icons.menu_rounded, color: Colors.white, size: 20),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // ── Scrollable body ──
+            Expanded(
+              child: SingleChildScrollView(
+                controller: _scrollCtrl,
                 child: Column(
                   children: [
-                    SizedBox(
-                      height: 52,
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 32,
-                              height: 32,
-                              decoration: BoxDecoration(
-                                gradient: kEmeraldGradient,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(Icons.auto_awesome, size: 16, color: Colors.white),
-                            ),
-                            const SizedBox(width: 10),
-                            const Text('Pronote',
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
-                            const Spacer(),
-                            TextButton(
-                              onPressed: () => context.go('/login'),
-                              style: TextButton.styleFrom(
-                                foregroundColor: AppColors.slate400,
-                                textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                              ),
-                              child: const Text('Sign in'),
-                            ),
-                            const SizedBox(width: 6),
-                            DecoratedBox(
-                              decoration: BoxDecoration(
-                                gradient: kEmeraldGradient,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: TextButton(
-                                onPressed: () => context.go('/signup'),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                  textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                ),
-                                child: const Text('Start trial'),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    const _HeroSection(),
+                    const _StatsBar(),
+                    KeyedSubtree(key: _featuresKey, child: const _FeaturesSection()),
+                    KeyedSubtree(key: _howItWorksKey, child: const _HowItWorksSection()),
+                    KeyedSubtree(key: _aboutKey, child: const _ForDifferentRolesSection()),
+                    KeyedSubtree(key: _pricingKey, child: const _PricingSection()),
+                    _FaqSection(
+                      openIndex: _openFaq,
+                      onToggle: (i) => setState(() => _openFaq = _openFaq == i ? -1 : i),
                     ),
-                    SizedBox(
-                      height: 42,
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Row(
-                          children: [
-                            _NavChip(label: 'Features', onTap: () => _jumpTo(_featuresKey)),
-                            _NavChip(label: 'How It Works', onTap: () => _jumpTo(_howItWorksKey)),
-                            _NavChip(label: 'Pricing', onTap: () => _jumpTo(_pricingKey)),
-                            _NavChip(label: 'Security', onTap: () => _jumpTo(_securityKey)),
-                            _NavChip(label: 'About', onTap: () => _jumpTo(_aboutKey)),
-                          ],
-                        ),
-                      ),
-                    ),
+                    KeyedSubtree(key: _securityKey, child: const _SecuritySection()),
+                    const _FinalCta(),
+                    const _Footer(),
                   ],
                 ),
               ),
             ),
-          ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        // SingleChildScrollView + Column so every section is in the widget
-        // tree at all times. This is what makes Scrollable.ensureVisible
-        // work for jumps to far-away sections — a SliverList would lazy-
-        // build children and the GlobalKey lookup would return null.
-        child: Column(
-          children: [
-            // Section order matches the web LandingPage.tsx exactly:
-            //   Hero → StatsBar → Features → HowItWorks → ForRoles ("About"
-            //   on the web's nav) → Pricing → FAQ → Security → FinalCTA → Footer.
-            const _HeroSection(),
-            const _StatsBar(),
-            KeyedSubtree(key: _featuresKey, child: const _FeaturesSection()),
-            KeyedSubtree(key: _howItWorksKey, child: const _HowItWorksSection()),
-            KeyedSubtree(key: _aboutKey, child: const _ForDifferentRolesSection()),
-            KeyedSubtree(key: _pricingKey, child: const _PricingSection()),
-            _FaqSection(
-              openIndex: _openFaq,
-              onToggle: (i) => setState(() => _openFaq = _openFaq == i ? -1 : i),
-            ),
-            KeyedSubtree(key: _securityKey, child: const _SecuritySection()),
-            const _FinalCta(),
-            const _Footer(),
           ],
         ),
       ),
@@ -161,31 +153,165 @@ class _LandingScreenState extends State<LandingScreen> {
   }
 }
 
-class _NavChip extends StatelessWidget {
+// ─────────────────────────────────────────────────────────────────
+// Premium slide-out drawer (replaces nav chip bar)
+// ─────────────────────────────────────────────────────────────────
+class _LandingDrawer extends StatelessWidget {
+  final void Function(GlobalKey key) onNavigate;
+  final GlobalKey featuresKey;
+  final GlobalKey howItWorksKey;
+  final GlobalKey pricingKey;
+  final GlobalKey securityKey;
+  final GlobalKey aboutKey;
+
+  const _LandingDrawer({
+    required this.onNavigate,
+    required this.featuresKey,
+    required this.howItWorksKey,
+    required this.pricingKey,
+    required this.securityKey,
+    required this.aboutKey,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      ('Features', Icons.auto_awesome_outlined, featuresKey),
+      ('How It Works', Icons.checklist_rounded, howItWorksKey),
+      ('Pricing', Icons.workspace_premium_outlined, pricingKey),
+      ('Security', Icons.shield_outlined, securityKey),
+      ('About', Icons.info_outline_rounded, aboutKey),
+    ];
+
+    return Drawer(
+      width: 280,
+      backgroundColor: AppColors.slate900,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.horizontal(left: Radius.circular(24)),
+      ),
+      child: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drawer header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 16, 20),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      gradient: kEmeraldGradient,
+                      borderRadius: BorderRadius.circular(11),
+                    ),
+                    child: const Icon(Icons.auto_awesome, size: 18, color: Colors.white),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text('Pronote',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18)),
+                  const Spacer(),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded, color: AppColors.slate400, size: 22),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(color: Color(0x14FFFFFF), height: 1),
+            const SizedBox(height: 8),
+
+            // Nav items
+            ...items.map((item) => _DrawerItem(
+                  icon: item.$2,
+                  label: item.$1,
+                  onTap: () => onNavigate(item.$3),
+                )),
+
+            const SizedBox(height: 8),
+            const Divider(color: Color(0x14FFFFFF), height: 1),
+            const Spacer(),
+
+            // Bottom CTA buttons
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: OutlinedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    context.go('/login');
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Color(0x33FFFFFF)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  ),
+                  child: const Text('Sign in'),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+              child: SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: kEmeraldGradient,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.go('/signup');
+                      },
+                      borderRadius: BorderRadius.circular(14),
+                      child: const Center(
+                        child: Text('Start free trial',
+                            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800)),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DrawerItem extends StatelessWidget {
+  final IconData icon;
   final String label;
   final VoidCallback onTap;
-  const _NavChip({required this.label, required this.onTap});
+  const _DrawerItem({required this.icon, required this.label, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(14),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              color: AppColors.cardBg,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.cardBorder),
-            ),
-            child: Text(
-              label,
-              style: const TextStyle(color: AppColors.slate400, fontSize: 12.5, fontWeight: FontWeight.w600),
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Icon(icon, color: AppColors.slate400, size: 20),
+                const SizedBox(width: 14),
+                Text(label,
+                    style: const TextStyle(color: AppColors.slate300, fontSize: 14.5, fontWeight: FontWeight.w600)),
+              ],
             ),
           ),
         ),
