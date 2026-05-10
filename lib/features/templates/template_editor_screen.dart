@@ -88,11 +88,25 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
           _originalName = t.name;
           _nameCtrl.text = '${t.name} - Copy';
           setState(() {
-            _sections = (t.sections.isEmpty
-                    ? ['Subjective', 'Objective', 'Assessment', 'Plan']
-                    : t.sections)
-                .map(_makeSection)
-                .toList();
+            final sectionNames = t.sections.isEmpty
+                ? ['Subjective', 'Objective', 'Assessment', 'Plan']
+                : t.sections;
+            _sections = sectionNames.asMap().entries.map((entry) {
+              final i = entry.key;
+              final title = entry.value;
+              // Restore saved settings if available
+              if (t.sectionSettings != null && i < t.sectionSettings!.length) {
+                final ss = t.sectionSettings![i];
+                return _EditorSection(
+                  title: ss.title.isNotEmpty ? ss.title : title,
+                  verbosity: ss.verbosity,
+                  styling: ss.styling,
+                  content: ss.content,
+                  stylingInstructions: ss.stylingInstructions,
+                );
+              }
+              return _makeSection(title);
+            }).toList();
           });
         }
       });
@@ -158,6 +172,15 @@ class _TemplateEditorScreenState extends ConsumerState<TemplateEditorScreen> {
           : 'Custom template',
       specialty: 'Custom',
       sections: _sections.map((s) => s.title).toList(),
+      sectionSettings: _sections
+          .map((s) => SectionSetting(
+                title: s.title,
+                verbosity: s.verbosity,
+                styling: s.styling,
+                content: s.content,
+                stylingInstructions: s.stylingInstructions,
+              ))
+          .toList(),
       isCustom: true,
       updatedAt: DateTime.now(),
     );

@@ -103,6 +103,9 @@ class AudioApi {
     required String transcription,
     required String template,
     String? patientName,
+    List<Map<String, dynamic>>? sectionSettings,
+    String? patientContext,
+    String? treatmentPlan,
   }) async {
     try {
       final res = await _dio.post(
@@ -111,6 +114,9 @@ class AudioApi {
           'transcription': transcription,
           'template': template,
           if (patientName != null) 'patientName': patientName,
+          if (sectionSettings != null) 'sectionSettings': sectionSettings,
+          if (patientContext != null) 'patientContext': patientContext,
+          if (treatmentPlan != null) 'treatmentPlan': treatmentPlan,
         },
         options: Options(
           receiveTimeout: const Duration(minutes: 5),

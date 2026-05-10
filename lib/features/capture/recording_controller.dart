@@ -11,6 +11,7 @@ import '../../core/api/api_client.dart';
 import '../../core/api/audio_api.dart';
 import '../../core/api/notes_api.dart';
 import '../../core/models/note.dart';
+import '../../core/models/template.dart';
 
 /// Mirrors the web's MIN/MAX/WARNING constants in CapturePage.tsx (lines 26-34)
 /// — DO NOT diverge. UI logic depends on these matching across platforms.
@@ -41,6 +42,9 @@ class RecordingState {
   /// Template id selected for this session ("soap", "psychiatry", etc.).
   final String selectedTemplateId;
 
+  /// Per-section formatting preferences resolved from the selected template.
+  final List<SectionSetting>? sectionSettings;
+
   /// Status message shown during multi-step processing.
   final String processingMessage;
 
@@ -55,6 +59,7 @@ class RecordingState {
     this.patientName = '',
     this.patientPronoun = '',
     this.selectedTemplateId = 'soap',
+    this.sectionSettings,
     this.processingMessage = '',
   });
 
@@ -81,9 +86,11 @@ class RecordingState {
     String? patientName,
     String? patientPronoun,
     String? selectedTemplateId,
+    List<SectionSetting>? sectionSettings,
     String? processingMessage,
     bool clearError = false,
     bool clearNote = false,
+    bool clearSectionSettings = false,
   }) {
     return RecordingState(
       phase: phase ?? this.phase,
@@ -96,6 +103,7 @@ class RecordingState {
       patientName: patientName ?? this.patientName,
       patientPronoun: patientPronoun ?? this.patientPronoun,
       selectedTemplateId: selectedTemplateId ?? this.selectedTemplateId,
+      sectionSettings: clearSectionSettings ? null : (sectionSettings ?? this.sectionSettings),
       processingMessage: processingMessage ?? this.processingMessage,
     );
   }
@@ -133,8 +141,12 @@ class RecordingController extends StateNotifier<RecordingState> {
     state = state.copyWith(patientName: '', patientPronoun: '');
   }
 
-  void setTemplate(String id) {
-    state = state.copyWith(selectedTemplateId: id);
+  void setTemplate(String id, {List<SectionSetting>? sectionSettings}) {
+    state = state.copyWith(
+      selectedTemplateId: id,
+      sectionSettings: sectionSettings,
+      clearSectionSettings: sectionSettings == null,
+    );
   }
 
   Future<bool> _ensureMicPermission() async {
@@ -338,6 +350,9 @@ class RecordingController extends StateNotifier<RecordingState> {
         transcription: transcriptText,
         template: state.selectedTemplateId,
         patientName: state.patientName.isEmpty ? null : state.patientName,
+        sectionSettings: state.sectionSettings
+            ?.map((s) => s.toJson())
+            .toList(),
       );
 
       // ── Step 4: Create note in database ──

@@ -11,6 +11,27 @@ import 'recording_controller.dart';
 /// Mirrors frontend/src/pages/CapturePage.tsx 1:1. Mobile concession:
 /// the right-hand Settings panel renders BELOW the recording panel
 /// instead of beside it.
+
+/// Sections that default to paragraph styling (narrative text).
+/// All other sections default to bullet-point styling.
+const _kParagraphSections = {
+  'Subjective', 'Chief Complaint', 'HPI',
+  'History of Present Illness', 'Medical Decision Making',
+};
+
+/// Generates default per-section formatting preferences for built-in
+/// templates that don't have explicit sectionSettings stored.
+List<SectionSetting> _defaultSectionSettings(List<String> sections) {
+  return sections
+      .map((title) => SectionSetting(
+            title: title,
+            verbosity: 'detailed',
+            styling: _kParagraphSections.contains(title)
+                ? 'paragraph'
+                : 'bullet',
+          ))
+      .toList();
+}
 class CaptureScreen extends ConsumerStatefulWidget {
   const CaptureScreen({super.key});
 
@@ -1108,7 +1129,19 @@ class _SettingsPanel extends ConsumerWidget {
                 selectedId: state.selectedTemplateId,
                 onChanged: (id) {
                   if (id != null) {
-                    ref.read(recordingControllerProvider.notifier).setTemplate(id);
+                    final tpl = myTemplates.firstWhere(
+                      (t) => t.id == id,
+                      orElse: () => myTemplates.first,
+                    );
+                    // Use saved sectionSettings if available, otherwise
+                    // auto-generate defaults (paragraph for narrative
+                    // sections, bullet for the rest — matches web).
+                    final settings = tpl.sectionSettings ??
+                        _defaultSectionSettings(tpl.sections);
+                    ref.read(recordingControllerProvider.notifier).setTemplate(
+                      id,
+                      sectionSettings: settings,
+                    );
                   }
                 },
               ),
