@@ -151,10 +151,29 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
             const SizedBox(height: 22),
             _FormCard(
               children: [
-                // Google sign-up button (placeholder until OAuth is wired
-                // through the same flow auth_controller exposes).
+                // Google sign-up — uses the same native Google Sign-In
+                // flow as login, backend handles create-or-login.
                 _GoogleButton(
-                  onTap: () => _openLink('https://pronoteai.com/signup?provider=google'),
+                  onTap: () async {
+                    final ok = await ref
+                        .read(authControllerProvider.notifier)
+                        .loginWithGoogle();
+                    if (!context.mounted) return;
+                    if (ok) {
+                      context.go('/dashboard');
+                    } else {
+                      final err = ref.read(authControllerProvider).error;
+                      if (err != null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(err),
+                            backgroundColor: AppColors.danger,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                    }
+                  },
                 ),
                 const SizedBox(height: 14),
                 const _OrDivider(label: 'or sign up with email'),

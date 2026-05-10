@@ -189,13 +189,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: 24),
 
                     // ── Google button ──
-                    _GoogleButton(onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Google Sign-In coming soon'),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
+                    _GoogleButton(onPressed: () async {
+                      final ok = await ref
+                          .read(authControllerProvider.notifier)
+                          .loginWithGoogle();
+                      if (!context.mounted) return;
+                      if (ok) {
+                        context.go('/dashboard');
+                      } else {
+                        final err = ref.read(authControllerProvider).error;
+                        if (err != null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(err),
+                              backgroundColor: AppColors.danger,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      }
                     }),
 
                     const SizedBox(height: 20),

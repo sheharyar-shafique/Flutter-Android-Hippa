@@ -73,6 +73,20 @@ class AuthApi {
     }
   }
 
+  /// Google OAuth — sends the Google ID token to the backend which verifies
+  /// it and returns a Pronote JWT + user, matching the web's
+  /// `authApi.googleLogin(idToken)`.
+  Future<AuthResult> googleLogin({required String idToken}) async {
+    try {
+      final res = await _dio.post('/auth/google', data: {
+        'idToken': idToken,
+      });
+      return AuthResult.fromJson(res.data as Map<String, dynamic>);
+    } on DioException catch (e) {
+      throw ApiException.fromDio(e);
+    }
+  }
+
   Future<void> logout() async {
     try {
       await _dio.post('/auth/logout');

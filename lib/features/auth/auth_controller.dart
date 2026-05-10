@@ -1,8 +1,15 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 import '../../core/api/api_client.dart';
 import '../../core/api/auth_api.dart';
 import '../../core/models/user.dart';
+
+/// Web client ID from the Google Cloud Console — same one the web frontend uses
+/// via VITE_GOOGLE_CLIENT_ID. The *server* client ID is needed for the Android
+/// SDK to request an idToken that the backend can verify.
+const _kGoogleClientId =
+    '990890302928-okavabrhnjvkv49028nqk53vsbhbj8si.apps.googleusercontent.com';
 
 /// All app state lives behind this provider so screens can `ref.watch` it
 /// and `go_router` redirects can decide where to send the user.
@@ -86,6 +93,47 @@ class AuthController extends StateNotifier<AuthState> {
       return false;
     } catch (e) {
       state = state.copyWith(busy: false, error: 'Unexpected error: $e');
+      return false;
+    }
+  }
+
+  /// Google Sign-In flow — mirrors the web's `loginWithGoogle(idToken)`.
+  /// Uses the native Google Sign-In SDK to get an idToken, then sends it
+  /// to the backend `/auth/google` endpoint.
+  Future<bool> loginWithGoogle() async {
+    state = state.copyWith(busy: true, clearError: true);
+    try {
+      final googleSignIn = GoogleSignIn(
+        serverClientId: _kGoogleClientId,
+        scopes: ['email', 'profile'],
+      );
+      final account = await googleSignIn.signIn();
+      if (account == null) {
+        // User cancelled
+        state = state.copyWith(busy: false);
+        return false;
+      }
+      final auth = await account.authentication;
+      final idToken = auth.idToken;
+      if (idToken == null) {
+        state = state.copyWith(
+          busy: false,
+          error: 'Could not get Google ID token',
+        );
+        return false;
+      }
+
+      final result = await _ref.read(authApiProvider).googleLogin(idToken: idToken);
+      await _ref
+          .read(secureStorageProvider)
+          .write(key: kTokenStorageKey, value: result.token);
+      state = state.copyWith(user: result.user, busy: false);
+      return true;
+    } on ApiException catch (e) {
+      state = state.copyWith(busy: false, error: e.message);
+      return false;
+    } catch (e) {
+      state = state.copyWith(busy: false, error: 'Google sign-in failed: $e');
       return false;
     }
   }
