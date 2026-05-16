@@ -56,6 +56,13 @@ android {
     }
 
     buildTypes {
+        debug {
+            signingConfig = if (keyPropsFile.exists()) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
+        }
         release {
             signingConfig = if (keyPropsFile.exists()) {
                 signingConfigs.getByName("release")

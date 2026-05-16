@@ -540,14 +540,9 @@ class _TimerDisplay extends StatelessWidget {
             child: CircularProgressIndicator(strokeWidth: 4, color: AppColors.emerald400),
           ),
           const SizedBox(height: 14),
-          Text(
-            msg,
-            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 4),
           const Text(
-            'This may take 30–60 seconds',
-            style: TextStyle(color: AppColors.slate400, fontSize: 12),
+            'Generating note',
+            style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
           ),
         ],
       );
