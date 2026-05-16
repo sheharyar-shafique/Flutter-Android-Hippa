@@ -229,7 +229,7 @@ class _StatsGrid extends StatelessWidget {
   const _StatsGrid({required this.stats, required this.loading});
 
   String _fmtTime(double s) {
-    if (s <= 0) return '—';
+    if (s <= 0) return 'N/A';
     if (s < 60) return '${s.toStringAsFixed(0)} sec';
     final m = s ~/ 60;
     final r = (s - m * 60).toInt();

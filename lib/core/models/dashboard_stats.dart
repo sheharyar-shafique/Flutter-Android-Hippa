@@ -42,11 +42,24 @@ class DashboardStats {
       return 0;
     }
 
-    /// Parse time strings like "2m 30s", "45s", "1m" into seconds.
+    /// Parse time strings like "2m 30s", "45s", "1m", "45 sec", "1.5 min",
+    /// or "N/A" into seconds.
     double _parseTimeString(dynamic v) {
       if (v is num) return v.toDouble();
       if (v is String) {
         final s = v.trim();
+        if (s.isEmpty || s == 'N/A') return 0;
+        // Try "X.Y min" pattern (e.g. "1.5 min")
+        final minDecMatch = RegExp(r'([\d.]+)\s*min').firstMatch(s);
+        if (minDecMatch != null) {
+          final mins = double.tryParse(minDecMatch.group(1) ?? '0') ?? 0;
+          return (mins * 60);
+        }
+        // Try "X sec" pattern (e.g. "45 sec")
+        final secWordMatch = RegExp(r'(\d+)\s*sec').firstMatch(s);
+        if (secWordMatch != null) {
+          return double.tryParse(secWordMatch.group(1) ?? '0') ?? 0;
+        }
         // Try "Xm Ys" pattern
         final match = RegExp(r'(\d+)m\s*(\d+)?s?').firstMatch(s);
         if (match != null) {
