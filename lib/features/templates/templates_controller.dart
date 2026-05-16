@@ -112,7 +112,36 @@ class TemplatesController extends StateNotifier<TemplatesState> {
         );
         return;
       } else {
-        // No server data yet (new user) → seed with all defaults
+        // No server data yet (new user) → check local storage first before
+        // seeding defaults, so we don't overwrite another device's preferences.
+        final rawIds = prefs.getString(_kAddedIdsKey);
+        if (rawIds != null) {
+          // Local storage has data (maybe from a previous session) → use it
+          // but DON'T overwrite the server since we don't know what's there.
+          try {
+            final ids = (jsonDecode(rawIds) as List).cast<String>();
+            final rawCustom = prefs.getString(_kCustomTemplatesKey);
+            List<NoteTemplate> customs = const [];
+            if (rawCustom != null) {
+              try {
+                customs = (jsonDecode(rawCustom) as List)
+                    .cast<Map<String, dynamic>>()
+                    .map(NoteTemplate.fromJson)
+                    .toList();
+              } catch (_) {}
+            }
+            state = state.copyWith(
+              addedIds: ids,
+              customTemplates: customs,
+              initialising: false,
+            );
+            return;
+          } catch (_) {
+            // Corrupted local data — fall through to seed defaults
+          }
+        }
+
+        // Truly new user (no server data AND no local data) → seed with defaults
         final defaultIds = kDefaultTemplates.map((t) => t.id).toList();
         state = state.copyWith(
           addedIds: defaultIds,
@@ -128,7 +157,7 @@ class TemplatesController extends StateNotifier<TemplatesState> {
       // Server unavailable → fall back to local storage
     }
 
-    // Fallback: load from SharedPreferences
+    // Fallback: load from SharedPreferences (server was unreachable)
     final rawIds = prefs.getString(_kAddedIdsKey);
     final rawCustom = prefs.getString(_kCustomTemplatesKey);
 
@@ -142,7 +171,7 @@ class TemplatesController extends StateNotifier<TemplatesState> {
         ids = kDefaultTemplates.map((t) => t.id).toList();
       }
     } else {
-      // First-launch seed → save AND surface so UI shows full library.
+      // First-launch seed — but do NOT save to server (we're offline)
       ids = kDefaultTemplates.map((t) => t.id).toList();
       await prefs.setString(_kAddedIdsKey, jsonEncode(ids));
     }
